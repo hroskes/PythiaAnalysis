@@ -1,4 +1,4 @@
-#include <Test/MiniAnalyzer/interface/LHEHandler.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/LHEHandler.h>
 #include <MelaAnalytics/EventContainer/interface/HiggsComparators.h>
 #include <iomanip>
 #include <iostream>

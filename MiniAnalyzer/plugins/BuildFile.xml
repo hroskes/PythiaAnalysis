@@ -13,7 +13,7 @@
 <use name="MelaAnalytics/CandidateLOCaster"/>
 <use name="MelaAnalytics/EventContainer"/>
 <use name="MelaAnalytics/GenericMEComputer"/>
-<use name="Test/MiniAnalyzer"/>
+<use name="PythiaAnalysis/MiniAnalyzer"/>
 <use name="ZZMatrixElement/MEKD"/>
 <use name="ZZMatrixElement/MELA"/>
 <use name="ZZMatrixElement/MEMCalculators"/>

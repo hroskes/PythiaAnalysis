@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    Test/MiniAnalyzer
+// Package:    PythiaAnalysis/MiniAnalyzer
 // Class:      SmearJet
 // 
-/**\class SmearJet SmearJet.cc Test/MiniAnalyzer/plugins/SmearJet.cc
+/**\class SmearJet SmearJet.cc PythiaAnalysis/MiniAnalyzer/plugins/SmearJet.cc
 
 Description: [one line class summary]
 

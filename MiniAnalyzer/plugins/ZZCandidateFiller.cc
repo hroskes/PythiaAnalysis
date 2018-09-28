@@ -25,10 +25,10 @@
 #include <DataFormats/METReco/interface/PFMET.h>
 #include <DataFormats/METReco/interface/PFMETCollection.h>
 
-#include <Test/MiniAnalyzer/interface/Comparators.h>
-#include <Test/MiniAnalyzer/interface/CutSet.h>
-#include <Test/MiniAnalyzer/interface/DaughterDataHelpers.h>
-#include <Test/MiniAnalyzer/interface/FinalStates.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/Comparators.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/CutSet.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/DaughterDataHelpers.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/FinalStates.h>
 //#include <ZZAnalysis/AnalysisStep/interface/utils.h>
 
 #include <MelaAnalytics/GenericMEComputer/interface/GMECHelperFunctions.h>

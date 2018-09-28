@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include <MelaAnalytics/GenericMEComputer/interface/GMECHelperFunctions.h>
-#include "Test/MiniAnalyzer/interface/HZZ4lNtupleFactory.h"
+#include "PythiaAnalysis/MiniAnalyzer/interface/HZZ4lNtupleFactory.h"
 
 /*
 bool addKinRefit = false;

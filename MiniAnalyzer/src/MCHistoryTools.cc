@@ -11,12 +11,12 @@
  *  \author G. Ortona - LLR
  */
 
-#include <Test/MiniAnalyzer/interface/MCHistoryTools.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/MCHistoryTools.h>
 
 #include <DataFormats/HepMCCandidate/interface/GenParticle.h>
 #include <SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h>
 
-#include <Test/MiniAnalyzer/interface/FinalStates.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/FinalStates.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 

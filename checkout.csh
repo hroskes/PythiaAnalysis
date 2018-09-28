@@ -29,4 +29,4 @@ git clone https://github.com/cms-analysis/HiggsAnalysis-ZZMatrixElement.git ZZMa
   mv libjhugenmela.so ../data/${SCRAM_ARCH}/                     ;\
 )
 
-git clone https://github.com/meng-xiao/Test.git
+git clone https://github.com/meng-xiao/PythiaAnalysis.git

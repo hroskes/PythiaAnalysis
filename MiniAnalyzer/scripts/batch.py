@@ -11,8 +11,8 @@ import pprint
 import subprocess
 from datetime import date
 from optparse import OptionParser
-from Test.MiniAnalyzer.eostools import *
-from Test.MiniAnalyzer.readSampleInfo import *
+from PythiaAnalysis.MiniAnalyzer.eostools import *
+from PythiaAnalysis.MiniAnalyzer.readSampleInfo import *
 
 
 def chunks(l, n):

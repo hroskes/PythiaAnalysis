@@ -20,8 +20,8 @@
 #include <DataFormats/PatCandidates/interface/Muon.h>
 #include <DataFormats/PatCandidates/interface/Electron.h>
 
-#include <Test/MiniAnalyzer/interface/CutSet.h>
-#include <Test/MiniAnalyzer/interface/DaughterDataHelpers.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/CutSet.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/DaughterDataHelpers.h>
 
 #include <string>
 #include <Math/VectorUtil.h>

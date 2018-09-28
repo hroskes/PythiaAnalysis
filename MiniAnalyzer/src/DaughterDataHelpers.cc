@@ -1,4 +1,4 @@
-#include <Test/MiniAnalyzer/interface/DaughterDataHelpers.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/DaughterDataHelpers.h>
 
 #include <DataFormats/PatCandidates/interface/CompositeCandidate.h>
 #include <DataFormats/PatCandidates/interface/Muon.h>

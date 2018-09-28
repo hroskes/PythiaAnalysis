@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    Test/MiniAnalyzer
+// Package:    PythiaAnalysis/MiniAnalyzer
 // Class:      MiniAnalyzer
 // 
-/**\class MiniAnalyzer MiniAnalyzer.cc Test/MiniAnalyzer/plugins/MiniAnalyzer.cc
+/**\class MiniAnalyzer MiniAnalyzer.cc PythiaAnalysis/MiniAnalyzer/plugins/MiniAnalyzer.cc
 
 Description: [one line class summary]
 
@@ -42,14 +42,14 @@ Implementation:
 #include <MelaAnalytics/GenericMEComputer/interface/GMECHelperFunctions.h>
 
 
-#include "Test/MiniAnalyzer/interface/LHEHandler.h"
-#include "Test/MiniAnalyzer/interface/DaughterDataHelpers.h"
-#include "Test/MiniAnalyzer/interface/HZZ4lNtupleFactory.h"
+#include "PythiaAnalysis/MiniAnalyzer/interface/LHEHandler.h"
+#include "PythiaAnalysis/MiniAnalyzer/interface/DaughterDataHelpers.h"
+#include "PythiaAnalysis/MiniAnalyzer/interface/HZZ4lNtupleFactory.h"
 #include <MelaAnalytics/CandidateLOCaster/interface/MELACandidateRecaster.h>
 #include <MelaAnalytics/GenericMEComputer/interface/GMECHelperFunctions.h>
 
-#include <Test/MiniAnalyzer/interface/MCHistoryTools.h>
-#include <Test/MiniAnalyzer/interface/FinalStates.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/MCHistoryTools.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/FinalStates.h>
 
 
 

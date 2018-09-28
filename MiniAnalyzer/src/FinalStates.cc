@@ -1,4 +1,4 @@
-#include <Test/MiniAnalyzer/interface/FinalStates.h>
+#include <PythiaAnalysis/MiniAnalyzer/interface/FinalStates.h>
 
 namespace {
   const unsigned nFS = 29;

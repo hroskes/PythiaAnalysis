@@ -1,6 +1,6 @@
 #!/bin/env python
 
-from Test.MiniAnalyzer.hadd import haddChunks
+from PythiaAnalysis.MiniAnalyzer.hadd import haddChunks
 
 
 if __name__ == '__main__':

@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    Test/MiniAnalyzer
+// Package:    PythiaAnalysis/MiniAnalyzer
 // Class:      SmearLepton
 // 
-/**\class SmearLepton SmearLepton.cc Test/MiniAnalyzer/plugins/SmearLepton.cc
+/**\class SmearLepton SmearLepton.cc PythiaAnalysis/MiniAnalyzer/plugins/SmearLepton.cc
 
 Description: [one line class summary]
 
