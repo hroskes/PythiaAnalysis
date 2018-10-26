@@ -14,10 +14,6 @@ from optparse import OptionParser
 from ZZAnalysis.AnalysisStep.eostools import *
 from ZZAnalysis.AnalysisStep.readSampleInfo import *
 
-print "================================================================"
-print "WARNING: LSF is really slow.  Your jobs probably won't run."
-print "You should use batch_Condor.py and resubmit_Condor.csh instead."
-print "================================================================"
 
 def chunks(l, n):
     return [l[i:i+n] for i in range(0, len(l), n)]
@@ -49,76 +45,83 @@ def split(comps):
     return splitComps
 
 
-def batchScriptCERN( index, remoteDir=''):
-   '''prepare the LSF version of the batch script, to run on LSF'''
+def batchScript( index, remoteDir=''):
+   '''prepare the Condor version of the batch script, to run on HTCondor'''
 #   print "INDEX", index
 #   print "remotedir", remoteDir
-   script = """#!/bin/tcsh
-#BSUB -q 8nh
-#BSUB -o job_%J.txt
-#ulimit -v 3000000
-if ( ! $?LS_SUBCWD ) then
-  #running interactively
-  set LS_SUBCWD=`pwd`
-  cd `mktemp -d`
-endif
-limit
-cat /proc/cpuinfo
-cat /proc/meminfo
-cd $CMSSW_BASE/src
-cmsenv
-setenv X509_USER_PROXY ~/x509up_u${uid}
-cd -
-echo 'Environment:'
-echo
-env
-echo
-echo 'Copying' ${LS_SUBCWD} to ${PWD} 
-cp -rf $LS_SUBCWD/ .
-echo '...done'
-echo
-#echo Workdir content:
-#ls -l
-echo
-cd `find . -type d | grep /`
+   script = """#!/bin/bash
+set -euo pipefail
+
+if [ -z ${_CONDOR_SCRATCH_DIR+x} ]; then
+  #running locally
+  runninglocally=true
+  _CONDOR_SCRATCH_DIR=$(mktemp -d)
+  SUBMIT_DIR=$(pwd)
+else
+  runninglocally=false
+  SUBMIT_DIR=$1
+fi
+
+cd $SUBMIT_DIR
+eval $(scram ru -sh)
+
+cp run_cfg.py $_CONDOR_SCRATCH_DIR
+cd $_CONDOR_SCRATCH_DIR
+
 pwd
-echo 'Running at:' `date`
-cmsRun run_cfg.py |& grep -v -e 'MINUIT WARNING' -e 'Second derivative zero' -e 'Negative diagonal element' -e 'added to diagonal of error matrix' > log.txt
-set cmsRunStatus=$?
-echo 'cmsRun done at: ' `date` with exit status: $cmsRunStatus
-if ( $cmsRunStatus != 0 ) echo $cmsRunStatus > exitStatus.txt
+
+echo 'Running at:' $(date)
+
+cmsRunStatus=   #default for successful completion is an empty file
+cmsRun run_cfg.py |& grep -v -e 'MINUIT WARNING' -e 'Second derivative zero' -e 'Negative diagonal element' -e 'added to diagonal of error matrix' > log.txt || cmsRunStatus=$?
+
+echo -n $cmsRunStatus > exitStatus.txt
+echo 'cmsRun done at: ' $(date) with exit status: ${cmsRunStatus+0}
 gzip log.txt
-echo
-#echo 'ls: '
-#pwd
-#ls -l
-#echo
-echo 'Sending the job directory back...'
-cp *.root *.txt *.gz $LS_SUBCWD
-if ( -z ZZ4lAnalysis.root ) then
- echo 'Empty file:  ZZ4lAnalysis.root'
- if ( -s ZZ4lAnalysis.root ) then
-   echo Retrying...
-   sleep 10
-   cp *.root $LS_SUBCWD
- endif
-endif
-echo 'destination dir: ls: '
-cd $LS_SUBCWD
-#pwd
-#ls -l
-setenv ROOT_HIST 0
-if ( -s ZZ4lAnalysis.root ) then
- root -q -b '${CMSSW_BASE}/src/ZZAnalysis/AnalysisStep/test/prod/rootFileIntegrity.r(\"ZZ4lAnalysis.root\")'
+
+export ROOT_HIST=0
+if [ -s ZZ4lAnalysis.root ]; then
+ root -q -b '${CMSSW_BASE}/src/ZZAnalysis/AnalysisStep/test/prod/rootFileIntegrity.r("ZZ4lAnalysis.root")'
 else
  echo moving empty file
  mv ZZ4lAnalysis.root ZZ4lAnalysis.root.empty
-endif
+fi
 
-echo '...done at' `date`
+#delete mela stuff and $USER.cc
+#I have no idea what $USER.cc is
+rm -f br.sm1 br.sm2 ffwarn.dat input.DAT process.DAT "$USER.cc"
+
+echo '...done at' $(date)
 exit $cmsRunStatus
+
+#note cping back is handled automatically by condor
+if $runninglocally; then
+  cp ZZ4lAnalysis.root* *.txt *.gz $SUBMIT_DIR
+fi
 """ 
    return script
+
+
+def condorSubScript( index, mainDir ):
+   '''prepare the Condor submition script'''
+   script = """executable              = $(directory)/batchScript.sh
+arguments               = {mainDir}/$(directory) $(ClusterId)$(ProcId)
+output                  = output/$(ClusterId).$(ProcId).out
+error                   = error/$(ClusterId).$(ProcId).err
+log                     = log/$(ClusterId).log
+Initialdir              = $(directory)
+
+request_memory          = 4000M
++JobFlavour             = "tomorrow"
+
+x509userproxy           = {home}/x509up_u{uid}
+
+#https://www-auth.cs.wisc.edu/lists/htcondor-users/2010-September/msg00009.shtml
+periodic_remove         = JobStatus == 5
+
+WhenToTransferOutput    = ON_EXIT_OR_EVICT
+"""
+   return script.format(home=os.path.expanduser("~"), uid=os.getuid(), mainDir=mainDir)
 
             
 class MyBatchManager:
@@ -229,7 +232,9 @@ class MyBatchManager:
             pp = pprint.PrettyPrinter(indent=4)
             pp.pprint( self.listOfJobs_)
 
-
+        condorscriptFileName = os.path.join(self.outputDir_, 'condor.sub')
+        with open(condorscriptFileName,'w') as condorscriptFile:
+            condorscriptFile.write(condorSubScript(value, self.outputDir_))
 
     def PrepareJob( self, value, dirname=None):
        '''Prepare a job for a given value.
@@ -243,6 +248,9 @@ class MyBatchManager:
        jobDir = '/'.join( [self.outputDir_, dname])
        print '\t',jobDir 
        self.mkdir( jobDir )
+       self.mkdir( jobDir + '/error' )
+       self.mkdir( jobDir + '/log' )
+       self.mkdir( jobDir + '/output' )
        self.listOfJobs_.append( jobDir )
        if not self.secondaryInputDir_ == None: self.inputPDFDir_ = '/'.join( [self.secondaryInputDir_, dname])
 
@@ -254,7 +262,7 @@ class MyBatchManager:
     def PrepareJobUserFromTemplate(self, jobDir, value ):
         scriptFileName = jobDir+'/batchScript.sh'
         scriptFile = open(scriptFileName,'w')
-        scriptFile.write( batchScriptCERN( value ) )
+        scriptFile.write( batchScript( value ) )
         scriptFile.close()
         os.system('chmod +x %s' % scriptFileName)
         template_name = splitComponents[value].samplename + 'run_template_cfg.py'
@@ -284,7 +292,7 @@ class MyBatchManager:
        #prepare the batch script
        scriptFileName = jobDir+'/batchScript.sh'
        scriptFile = open(scriptFileName,'w')
-       scriptFile.write( batchScriptCERN( value ) )
+       scriptFile.write( batchScript( value ) )
        scriptFile.close()
        os.system('chmod +x %s' % scriptFileName)
        

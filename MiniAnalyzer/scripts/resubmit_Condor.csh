@@ -1,19 +1,5 @@
 #!/bin/tcsh -f
 
-if ( -e condor.sub ) then
-   echo "This production was set up with batch_Condor.py"
-   echo "You should use resubmit_Condor.csh to submit jobs"
-   exit 1
-endif
-
-set QUEUE=$1
-if ($QUEUE == "") set QUEUE="8nh"
-
-if ($QUEUE != "8nh" && $QUEUE != "1nd" && $QUEUE != "2nd" && $QUEUE != "1nw" && $QUEUE != "cmscaf1nd" && $QUEUE != "cmscaf1nw") then
-   echo "Invalid queue" $QUEUE
-   exit
-endif
-
 # Make the grid proxy available in ~, if existing and valid
 set proxy_valid=`voms-proxy-info --timeleft`
 if ($proxy_valid > 10 ) then
@@ -40,8 +26,10 @@ endif
 
 set JOBNAME=`basename $PWD`
 
+set queue=' -queue directory in'
+
 foreach x (*Chunk*) 
- cd $x
- bsub -q $QUEUE -J $JOBNAME < ./batchScript.sh |& tee jobid
- cd -
+ set queue="$queue $x"
 end
+
+condor_submit condor.sub $queue
