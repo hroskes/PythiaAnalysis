@@ -42,7 +42,9 @@ Implementation:
 #include <MelaAnalytics/GenericMEComputer/interface/GMECHelperFunctions.h>
 
 
+#include "PythiaAnalysis/MiniAnalyzer/interface/EwkCorrections.h"
 #include "PythiaAnalysis/MiniAnalyzer/interface/LHEHandler.h"
+#include "PythiaAnalysis/MiniAnalyzer/src/kFactors.C"
 #include "PythiaAnalysis/MiniAnalyzer/interface/DaughterDataHelpers.h"
 #include "PythiaAnalysis/MiniAnalyzer/interface/HZZ4lNtupleFactory.h"
 #include <MelaAnalytics/CandidateLOCaster/interface/MELACandidateRecaster.h>
@@ -74,6 +76,12 @@ namespace {
 	Short_t NObsInt  = 0;
 	Float_t NTrueInt  = 0;
 	Float_t PUWeight  = 0;
+
+	Float_t KFactor_QCD_ggZZ_Nominal = 0;
+	Float_t KFactor_EW_qqZZ = 0;
+	Float_t KFactor_QCD_qqZZ_dPhi = 0;
+	Float_t KFactor_QCD_qqZZ_M = 0;
+	Float_t KFactor_QCD_qqZZ_Pt = 0;
 
 	Float_t PFMET  =  -99;
 	Short_t nCleanedJets  =  0;
@@ -241,6 +249,8 @@ class MiniAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		void FillAssocLepGenInfo(std::vector<const reco::Candidate *>& AssocLeps);
 		virtual void FillCandidate(const pat::CompositeCandidate& higgs, bool evtPass, const edm::Event&, const Int_t CRflag);
 		void BookAllBranches();
+		float EvalSpline(TSpline3* const& sp, float xval);
+		void FillKFactors(edm::Handle<GenEventInfoProduct>& genInfo, std::vector<const reco::Candidate *>& genZLeps);
 		FailedTreeLevel failedTreeLevel;
 		//counters
 		Float_t Nevt_Gen;
@@ -266,10 +276,16 @@ class MiniAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		Float_t gen_sumWeights;
 
 		edm::EDGetTokenT<edm::View<reco::Candidate> > prunedGenToken_;
+		edm::Handle<edm::View<reco::Candidate>> pruned;
 		edm::EDGetTokenT<reco::GenJetCollection> genJetToken_;
 		edm::EDGetTokenT<GenEventInfoProduct> genInfoToken;
 
 		LHEHandler* lheHandler;
+
+		int apply_K_NNLOQCD_ZZGG; // 0: Do not; 1: NNLO/LO; 2: NNLO/NLO; 3: NLO/LO
+		bool apply_K_NNLOQCD_ZZQQB;
+		bool apply_K_NLOEW_ZZQQB;
+
 		void buildMELABranches();
 		void computeMELABranches(MELACandidate* cand);
 		void updateMELAClusters_Common(const string clustertype);
@@ -305,6 +321,11 @@ class MiniAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		std::vector<MELACluster*> lheme_clusters;
 		string sampleName;
 
+		std::vector<std::vector<float> > ewkTable;
+
+		TSpline3* spkfactor_ggzz_nnlo[9]; // Nominal, PDFScaleDn, PDFScaleUp, QCDScaleDn, QCDScaleUp, AsDn, AsUp, PDFReplicaDn, PDFReplicaUp
+		TSpline3* spkfactor_ggzz_nlo[9]; // Nominal, PDFScaleDn, PDFScaleUp, QCDScaleDn, QCDScaleUp, AsDn, AsUp, PDFReplicaDn, PDFReplicaUp
+
 		HZZ4lNtupleFactory *myTree;
 		bool printedLHEweightwarning;
 
@@ -330,6 +351,9 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig):
 	failedTreeLevel(FailedTreeLevel(iConfig.getParameter<int>("failedTreeLevel"))),
 	prunedGenToken_(consumes<edm::View<reco::Candidate> >( iConfig.getParameter<edm::InputTag>("pruned"))),
 	genJetToken_(consumes<reco::GenJetCollection>(iConfig.getParameter<edm::InputTag>("genjet"))),
+	apply_K_NNLOQCD_ZZGG(iConfig.getParameter<int>("Apply_K_NNLOQCD_ZZGG")),
+	apply_K_NNLOQCD_ZZQQB(iConfig.getParameter<bool>("Apply_K_NNLOQCD_ZZQQB")),
+	apply_K_NLOEW_ZZQQB(iConfig.getParameter<bool>("Apply_K_NLOEW_ZZQQB")),
 	mela(13., 125., TVar::ERROR),
 	recoMElist(iConfig.getParameter<std::vector<std::string>>("recoProbabilities")),
 	lheMElist(iConfig.getParameter<std::vector<std::string>>("lheProbabilities")),
@@ -356,9 +380,27 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig):
 	consumesMany<LHEEventProduct>();
 	candToken = consumes<edm::View<pat::CompositeCandidate> >(edm::InputTag(theCandLabel));
 
+	std::string fipPath;
 
+	// Read EWK K-factor table from file
+	edm::FileInPath ewkFIP("ZZAnalysis/AnalysisStep/data/kfactors/ZZ_EwkCorrections.dat");
+	fipPath=ewkFIP.fullPath();
+	ewkTable = EwkCorrections::readFile_and_loadEwkTable(fipPath.data());
 
-
+	// Read the ggZZ k-factor shape from file
+	TString strZZGGKFVar[9]={
+	  "Nominal", "PDFScaleDn", "PDFScaleUp", "QCDScaleDn", "QCDScaleUp", "AsDn", "AsUp", "PDFReplicaDn", "PDFReplicaUp"
+	};
+	edm::FileInPath ggzzFIP_NNLO("ZZAnalysis/AnalysisStep/data/kfactors/Kfactor_Collected_ggHZZ_2l2l_NNLO_NNPDF_NarrowWidth_13TeV.root");
+	fipPath=ggzzFIP_NNLO.fullPath();
+	TFile* ggZZKFactorFile = TFile::Open(fipPath.data());
+	for (unsigned int ikf=0; ikf<9; ikf++) spkfactor_ggzz_nnlo[ikf] = (TSpline3*)ggZZKFactorFile->Get(Form("sp_kfactor_%s", strZZGGKFVar[ikf].Data()))->Clone(Form("sp_kfactor_%s_NNLO", strZZGGKFVar[ikf].Data()));
+	ggZZKFactorFile->Close();
+	edm::FileInPath ggzzFIP_NLO("ZZAnalysis/AnalysisStep/data/kfactors/Kfactor_Collected_ggHZZ_2l2l_NLO_NNPDF_NarrowWidth_13TeV.root");
+	fipPath=ggzzFIP_NLO.fullPath();
+	ggZZKFactorFile = TFile::Open(fipPath.data());
+	for (unsigned int ikf=0; ikf<9; ikf++) spkfactor_ggzz_nlo[ikf] = (TSpline3*)ggZZKFactorFile->Get(Form("sp_kfactor_%s", strZZGGKFVar[ikf].Data()))->Clone(Form("sp_kfactor_%s_NLO", strZZGGKFVar[ikf].Data()));
+	ggZZKFactorFile->Close();
 
 	usesResource("TFileService");
 
@@ -967,7 +1009,6 @@ MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 	using namespace reco;
 	using namespace pat;
 
-	Handle<edm::View<reco::Candidate>> pruned;
 	iEvent.getByToken(prunedGenToken_,pruned);
 
 	Handle<reco::GenJetCollection> cleanedJets;
@@ -1086,6 +1127,8 @@ MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 	//	//		}
 
 	//}
+
+	FillKFactors(genInfo, genZLeps);
 
 	RunNumber=iEvent.id().run();
 	LumiNumber=iEvent.luminosityBlock();
@@ -1359,6 +1402,17 @@ void MiniAnalyzer::BookAllBranches(){
 
 	myTree->Book("ZXFakeweight", ZXFakeweight, false);
 
+	if (apply_K_NNLOQCD_ZZGG>0){
+	  myTree->Book("KFactor_QCD_ggZZ_Nominal", KFactor_QCD_ggZZ_Nominal, failedTreeLevel >= minimalFailedTree);
+	}
+	if (apply_K_NLOEW_ZZQQB){
+	  myTree->Book("KFactor_EW_qqZZ", KFactor_EW_qqZZ, failedTreeLevel >= minimalFailedTree);
+	}
+	if (apply_K_NNLOQCD_ZZQQB){
+	  myTree->Book("KFactor_QCD_qqZZ_dPhi", KFactor_QCD_qqZZ_dPhi, failedTreeLevel >= minimalFailedTree);
+	  myTree->Book("KFactor_QCD_qqZZ_M", KFactor_QCD_qqZZ_M, failedTreeLevel >= minimalFailedTree);
+	  myTree->Book("KFactor_QCD_qqZZ_Pt", KFactor_QCD_qqZZ_Pt, failedTreeLevel >= minimalFailedTree);
+	}
 
 	myTree->Book("genFinalState", genFinalState, failedTreeLevel >= minimalFailedTree);
 	myTree->Book("genProcessId", genProcessId, failedTreeLevel >= minimalFailedTree);
@@ -1672,6 +1726,71 @@ void MiniAnalyzer::FillJet(const reco::GenJet& jet)
    JetMass .push_back( jet.p4().M());
 
 }
+
+float MiniAnalyzer::EvalSpline(TSpline3* const& sp, float xval){
+  double xmin = sp->GetXmin();
+  double xmax = sp->GetXmax();
+  double res=0;
+  if (xval<xmin){
+    res=sp->Eval(xmin);
+    double deriv=sp->Derivative(xmin);
+    res += deriv*(xval-xmin);
+  }
+  else if (xval>xmax){
+    res=sp->Eval(xmax);
+    double deriv=sp->Derivative(xmax);
+    res += deriv*(xval-xmax);
+  }
+  else res=sp->Eval(xval);
+  return res;
+}
+
+void MiniAnalyzer::FillKFactors(edm::Handle<GenEventInfoProduct>& genInfo, std::vector<const reco::Candidate *>& genZLeps){
+  KFactor_QCD_ggZZ_Nominal=1;
+  KFactor_QCD_qqZZ_dPhi=1;
+  KFactor_QCD_qqZZ_M=1;
+  KFactor_QCD_qqZZ_Pt=1;
+  KFactor_EW_qqZZ=1;
+
+  GenEventInfoProduct  genInfoP = *(genInfo.product());
+  if (apply_K_NNLOQCD_ZZGG>0 && apply_K_NNLOQCD_ZZGG!=3){
+    if (spkfactor_ggzz_nnlo[0]!=0) KFactor_QCD_ggZZ_Nominal = MiniAnalyzer::EvalSpline(spkfactor_ggzz_nnlo[0], GenHMass);
+    if (apply_K_NNLOQCD_ZZGG==2){
+      if (spkfactor_ggzz_nlo[0]!=0){
+        float divisor = MiniAnalyzer::EvalSpline(spkfactor_ggzz_nlo[0], GenHMass);
+        KFactor_QCD_ggZZ_Nominal /= divisor;
+      }
+      else{
+        KFactor_QCD_ggZZ_Nominal=0;
+      }
+    }
+  }
+  else if (apply_K_NNLOQCD_ZZGG==3){
+    if (spkfactor_ggzz_nlo[0]!=0) KFactor_QCD_ggZZ_Nominal = MiniAnalyzer::EvalSpline(spkfactor_ggzz_nlo[0], GenHMass);
+  }
+
+  if (genFinalState!=BUGGY){
+    if (genZLeps.size()==4) {
+      // Calculate NNLO/NLO QCD K factors for qqZZ
+      if (apply_K_NNLOQCD_ZZQQB){
+        bool sameflavor=(genZLeps.at(0)->pdgId()*genZLeps.at(1)->pdgId() == genZLeps.at(2)->pdgId()*genZLeps.at(3)->pdgId());
+        KFactor_QCD_qqZZ_dPhi = kfactor_qqZZ_qcd_dPhi(fabs(GenZ1Phi-GenZ2Phi), (sameflavor) ? 1 : 2);
+        KFactor_QCD_qqZZ_M    = kfactor_qqZZ_qcd_M(GenHMass, (sameflavor) ? 1 : 2, 2) / kfactor_qqZZ_qcd_M(GenHMass, (sameflavor) ? 1 : 2, 1);
+        KFactor_QCD_qqZZ_Pt   = kfactor_qqZZ_qcd_Pt(GenHPt, (sameflavor) ? 1 : 2);
+      }
+      // Calculate NLO EWK K factors for qqZZ
+      if (apply_K_NLOEW_ZZQQB){
+        TLorentzVector GENZ1Vec, GENZ2Vec, GENZZVec;
+        GENZ1Vec.SetPtEtaPhiM(GenZ1Pt, GenZ1Eta, GenZ1Phi, GenZ1Mass);
+        GENZ2Vec.SetPtEtaPhiM(GenZ2Pt, GenZ2Eta, GenZ2Phi, GenZ2Mass);
+        GENZZVec = GENZ1Vec + GENZ2Vec;
+
+        KFactor_EW_qqZZ = EwkCorrections::getEwkCorrections(pruned, ewkTable, genInfoP, GENZ1Vec, GENZ2Vec);
+      }
+    }
+  }
+}
+
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(MiniAnalyzer);
