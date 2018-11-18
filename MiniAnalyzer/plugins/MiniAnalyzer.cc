@@ -235,7 +235,7 @@ class MiniAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		~MiniAnalyzer();
 
 		static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
-
+		static void addweight(float &weight, float weighttoadd);
 
 	private:
 		virtual void beginJob() override;
@@ -380,10 +380,33 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig):
 	consumesMany<LHEEventProduct>();
 	candToken = consumes<edm::View<pat::CompositeCandidate> >(edm::InputTag(theCandLabel));
 
+	Nevt_Gen = 0;
+	Nevt_Gen_lumiBlock = 0;
+
+	//For Efficiency studies
+	gen_ZZ4mu = 0;
+	gen_ZZ4e = 0;
+	gen_ZZ2mu2e = 0;
+	gen_ZZ2l2tau = 0;
+	gen_ZZ2emu2tau = 0;
+	gen_ZZ4tau = 0;
+	gen_ZZ4mu_EtaAcceptance = 0;
+	gen_ZZ4mu_LeptonAcceptance = 0;
+	gen_ZZ4e_EtaAcceptance = 0;
+	gen_ZZ4e_LeptonAcceptance = 0;
+	gen_ZZ2mu2e_EtaAcceptance = 0;
+	gen_ZZ2mu2e_LeptonAcceptance = 0;
+	gen_BUGGY = 0;
+	gen_Unknown = 0;
+
+	gen_sumPUWeight = 0.f;
+	gen_sumGenMCWeight = 0.f;
+	gen_sumWeights =0.f;
+
 	std::string fipPath;
 
 	// Read EWK K-factor table from file
-	edm::FileInPath ewkFIP("ZZAnalysis/AnalysisStep/data/kfactors/ZZ_EwkCorrections.dat");
+	edm::FileInPath ewkFIP("PythiaAnalysis/MiniAnalyzer/data/kfactors/ZZ_EwkCorrections.dat");
 	fipPath=ewkFIP.fullPath();
 	ewkTable = EwkCorrections::readFile_and_loadEwkTable(fipPath.data());
 
@@ -391,12 +414,12 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig):
 	TString strZZGGKFVar[9]={
 	  "Nominal", "PDFScaleDn", "PDFScaleUp", "QCDScaleDn", "QCDScaleUp", "AsDn", "AsUp", "PDFReplicaDn", "PDFReplicaUp"
 	};
-	edm::FileInPath ggzzFIP_NNLO("ZZAnalysis/AnalysisStep/data/kfactors/Kfactor_Collected_ggHZZ_2l2l_NNLO_NNPDF_NarrowWidth_13TeV.root");
+	edm::FileInPath ggzzFIP_NNLO("PythiaAnalysis/MiniAnalyzer/data/kfactors/Kfactor_Collected_ggHZZ_2l2l_NNLO_NNPDF_NarrowWidth_13TeV.root");
 	fipPath=ggzzFIP_NNLO.fullPath();
 	TFile* ggZZKFactorFile = TFile::Open(fipPath.data());
 	for (unsigned int ikf=0; ikf<9; ikf++) spkfactor_ggzz_nnlo[ikf] = (TSpline3*)ggZZKFactorFile->Get(Form("sp_kfactor_%s", strZZGGKFVar[ikf].Data()))->Clone(Form("sp_kfactor_%s_NNLO", strZZGGKFVar[ikf].Data()));
 	ggZZKFactorFile->Close();
-	edm::FileInPath ggzzFIP_NLO("ZZAnalysis/AnalysisStep/data/kfactors/Kfactor_Collected_ggHZZ_2l2l_NLO_NNPDF_NarrowWidth_13TeV.root");
+	edm::FileInPath ggzzFIP_NLO("PythiaAnalysis/MiniAnalyzer/data/kfactors/Kfactor_Collected_ggHZZ_2l2l_NLO_NNPDF_NarrowWidth_13TeV.root");
 	fipPath=ggzzFIP_NLO.fullPath();
 	ggZZKFactorFile = TFile::Open(fipPath.data());
 	for (unsigned int ikf=0; ikf<9; ikf++) spkfactor_ggzz_nlo[ikf] = (TSpline3*)ggZZKFactorFile->Get(Form("sp_kfactor_%s", strZZGGKFVar[ikf].Data()))->Clone(Form("sp_kfactor_%s_NLO", strZZGGKFVar[ikf].Data()));
@@ -1080,7 +1103,13 @@ MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 			FillLepGenInfo(genZLeps.at(0)->pdgId(), genZLeps.at(1)->pdgId(), 0, 0,
 					genZLeps.at(0)->p4(), genZLeps.at(1)->p4(), *(new math::XYZTLorentzVector), *(new math::XYZTLorentzVector));
 		}
+
+		addweight(gen_sumPUWeight, PUWeight);
+		addweight(gen_sumGenMCWeight, genHEPMCweight);
+		addweight(gen_sumWeights, PUWeight*genHEPMCweight);
 	}
+
+	addweight(Nevt_Gen_lumiBlock, 1); // Needs to be outside the if-block
 
 	edm::Handle<LHEEventProduct> lhe_evt;
 	vector<edm::Handle<LHEEventProduct> > lhe_handles;
@@ -1094,7 +1123,33 @@ MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 	}
 	bool gen_ZZ4lInEtaAcceptance = false;   // All 4 gen leptons in eta acceptance
 	bool gen_ZZ4lInEtaPtAcceptance = false; // All 4 gen leptons in eta,pT acceptance
+
 	mch.genAcceptance(gen_ZZ4lInEtaAcceptance, gen_ZZ4lInEtaPtAcceptance);
+
+	if (genFinalState == EEEE) {
+		addweight(gen_ZZ4e, 1);
+		if (gen_ZZ4lInEtaAcceptance) addweight(gen_ZZ4e_EtaAcceptance, 1);
+		if (gen_ZZ4lInEtaPtAcceptance) addweight(gen_ZZ4e_LeptonAcceptance, 1);
+	} else if (genFinalState == MMMM) {
+		addweight(gen_ZZ4mu, 1);
+		if (gen_ZZ4lInEtaAcceptance) addweight(gen_ZZ4mu_EtaAcceptance, 1);
+		if (gen_ZZ4lInEtaPtAcceptance) addweight(gen_ZZ4mu_LeptonAcceptance, 1);
+	} else if (genFinalState == EEMM) {
+		addweight(gen_ZZ2mu2e, 1);
+		if (gen_ZZ4lInEtaAcceptance) addweight(gen_ZZ2mu2e_EtaAcceptance, 1);
+		if (gen_ZZ4lInEtaPtAcceptance) addweight(gen_ZZ2mu2e_LeptonAcceptance, 1);
+	} else if (genFinalState == llTT){
+		addweight(gen_ZZ2emu2tau, 1);
+		addweight(gen_ZZ2l2tau, 1);
+	} else if (genFinalState == TTTT){
+		addweight(gen_ZZ4tau, 1);
+		addweight(gen_ZZ2l2tau, 1);
+	} else if (genFinalState == BUGGY){  //handle MCFM ZZ->4tau mZ<2mtau bug
+		addweight(gen_BUGGY, 1);
+		return; // BUGGY events are skipped
+	} else {
+		addweight(gen_Unknown, 1);
+	}
 
 	//for( View<Candidate>::const_iterator par = pruned->begin(); par != pruned->end(); ++ par ) {
 	//	//		for (unsigned int i=0;i<pruned.size();i++){
@@ -1483,6 +1538,11 @@ void MiniAnalyzer::BookAllBranches(){
 
 	// MELA branches are booked under buildMELA
 }
+
+void MiniAnalyzer::addweight(float &weight, float weighttoadd) {
+	weight += weighttoadd;
+}
+
 void MiniAnalyzer::buildMELABranches(){
 	/***********************/
 	/***********************/
@@ -1659,7 +1719,7 @@ void MiniAnalyzer::FillCandidate(const pat::CompositeCandidate& cand, bool evtPa
 	bool candPassFullSel   = cand.userFloat("FullSel");
 	bool candIsBest = cand.userFloat("isBestCand");
 	bool passMz_zz = (Z1Mass>60. && Z1Mass<120. && Z2Mass>60. && Z2Mass<120.);   //FIXME hardcoded cut
-	std::cout<<"best "<<candIsBest<<"\t"<<candPass70Z2Loose<<"\t"<<candPassFullSel70<<"\t"<<candPassFullSel<<"\t"<<passMz_zz<<std::endl;
+	//std::cout<<"best "<<candIsBest<<"\t"<<candPass70Z2Loose<<"\t"<<candPassFullSel70<<"\t"<<candPassFullSel<<"\t"<<passMz_zz<<std::endl;
 
 	if (candIsBest) {
 		//    sel = 10; //FIXME see above

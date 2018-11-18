@@ -84,7 +84,11 @@ process.ZZTree= cms.EDAnalyzer('MiniAnalyzer',
 		lheProbabilities = cms.vstring(
 			),
 		recoProbabilities = cms.vstring( 
-			)
+			),
+		Apply_K_NNLOQCD_ZZGG = cms.int32(globals().get("APPLY_K_NNLOQCD_ZZGG", 0)),
+		Apply_K_NNLOQCD_ZZQQB = cms.bool(globals().get("APPLY_K_NNLOQCD_ZZQQB", False)),
+		Apply_K_NLOEW_ZZQQB = cms.bool(globals().get("APPLY_K_NLOEW_ZZQQB", False)),
+
 		)
 
 
