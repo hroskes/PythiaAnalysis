@@ -75,7 +75,7 @@ namespace {
 	Short_t Nvtx  = 0;
 	Short_t NObsInt  = 0;
 	Float_t NTrueInt  = 0;
-	Float_t PUWeight  = 0;
+	Float_t PUWeight  = 1;
 
 	Float_t KFactor_QCD_ggZZ_Nominal = 0;
 	Float_t KFactor_EW_qqZZ = 0;
