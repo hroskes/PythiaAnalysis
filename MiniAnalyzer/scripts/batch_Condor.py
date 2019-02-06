@@ -156,7 +156,7 @@ class MyBatchManager:
 
         self.parser_.add_option("-i", "--input", dest="cfgFileName",
                                 help="input cfg",
-                                default="analyzer_2015.py")
+                                default="analyzer.py")
 
         self.parser_.add_option("-d", "--debug", action="store_true",
                                 dest="verbose",default =False,
