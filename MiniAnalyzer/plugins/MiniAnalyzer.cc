@@ -43,7 +43,7 @@ Implementation:
 
 
 #include "PythiaAnalysis/MiniAnalyzer/interface/EwkCorrections.h"
-#include "PythiaAnalysis/MiniAnalyzer/interface/LHEHandler.h"
+#include "CommonLHETools/LHEHandler/interface/LHEHandler.h"
 #include "PythiaAnalysis/MiniAnalyzer/src/kFactors.C"
 #include "PythiaAnalysis/MiniAnalyzer/interface/DaughterDataHelpers.h"
 #include "PythiaAnalysis/MiniAnalyzer/interface/HZZ4lNtupleFactory.h"
