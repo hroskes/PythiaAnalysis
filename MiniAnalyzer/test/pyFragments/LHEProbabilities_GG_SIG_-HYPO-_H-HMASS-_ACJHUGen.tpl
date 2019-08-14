@@ -61,7 +61,7 @@ LHE_Probabilities_SpinTwo_JHUGen = [
 # Construct the final list
 theLHEProbabilities = []
 theLHEProbabilities.extend(LHE_DecayProbabilities_SpinZero_JHUGen)
-theLHEProbabilities.extend(LHE_Probabilities_SpinTwo_JHUGen)
+#theLHEProbabilities.extend(LHE_Probabilities_SpinTwo_JHUGen)
 
 # Append final list
 for name in (
