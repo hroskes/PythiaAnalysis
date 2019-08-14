@@ -125,7 +125,7 @@ ZZCandidateFiller::ZZCandidateFiller(const edm::ParameterSet& iConfig) :
   rolesZ2Z1 = {"Z2", "Z1"};
 
 
-  string cmp=iConfig.getParameter<string>("bestCandComparator");
+  std::string cmp=iConfig.getParameter<std::string>("bestCandComparator");
   if      (cmp=="byBestZ1bestZ2") bestCandType=Comparators::byBestZ1bestZ2;
   else if (cmp=="byBestKD")       bestCandType=Comparators::byBestKD;
   else if (cmp=="byBestKD_VH")    bestCandType=Comparators::byBestKD_VH;
@@ -304,7 +304,7 @@ void ZZCandidateFiller::produce(edm::Event& iEvent, const edm::EventSetup& iSetu
     for (int i=0;i<4;++i) {
       for (int j=i+1;j<4;++j) {
         float mll = (lep[i]->p4()+lep[j]->p4()).mass();
-        mll6 = min(mll, mll6);
+        mll6 = std::min(mll, mll6);
         if (lep[i]->charge()*lep[j]->charge()<0) { //OS
           mll4 = min (mll,mll4);
         }
@@ -629,7 +629,7 @@ void ZZCandidateFiller::buildMELA(){
     MELAOptionParser* me_opt;
     // First find out if the option has a copy specification
     // These copy options will be evaulated in a separate loop
-    if (recoMElist.at(it).find("Copy")!=string::npos){
+    if (recoMElist.at(it).find("Copy")!=std::string::npos){
       me_opt = new MELAOptionParser(recoMElist.at(it));
       me_copyopts.push_back(me_opt);
       continue;
@@ -652,25 +652,25 @@ void ZZCandidateFiller::buildMELA(){
     // Create the necessary branches for each computation
     // Notice that no tree is passed, so no TBranches are created.
     if (me_opt->doBranch()){
-      string basename = me_opt->getName();
-      if (me_opt->isGen()) basename = string("Gen_") + basename;
+      std::string basename = me_opt->getName();
+      if (me_opt->isGen()) basename = std::string("Gen_") + basename;
       MELABranch* tmpbranch;
       if (me_opt->hasPAux()){
         tmpbranch = new MELABranch(
-          (TTree*)0, TString((string("pAux_") + basename).c_str()),
+          (TTree*)0, TString((std::string("pAux_") + basename).c_str()),
           me_computer->getVal(MELAHypothesis::UsePAux), me_computer
           );
         me_branches.push_back(tmpbranch);
       }
       if (me_opt->hasPConst()){
         tmpbranch = new MELABranch(
-          (TTree*)0, TString((string("pConst_") + basename).c_str()),
+          (TTree*)0, TString((std::string("pConst_") + basename).c_str()),
           me_computer->getVal(MELAHypothesis::UsePConstant), me_computer
           );
         me_branches.push_back(tmpbranch);
       }
       tmpbranch = new MELABranch(
-        (TTree*)0, TString((string("p_") + basename).c_str()),
+        (TTree*)0, TString((std::string("p_") + basename).c_str()),
         me_computer->getVal(MELAHypothesis::UseME), me_computer
         );
       me_branches.push_back(tmpbranch);
@@ -703,25 +703,25 @@ void ZZCandidateFiller::buildMELA(){
     // Create the necessary branches for each computation
     // Notice that no tree is passed, so no TBranches are created.
     if (me_opt->doBranch()){
-      string basename = me_opt->getName();
-      if (me_opt->isGen()) basename = string("Gen_") + basename;
+      std::string basename = me_opt->getName();
+      if (me_opt->isGen()) basename = std::string("Gen_") + basename;
       MELABranch* tmpbranch;
       if (me_opt->hasPAux()){
         tmpbranch = new MELABranch(
-          (TTree*)0, TString((string("pAux_") + basename).c_str()),
+          (TTree*)0, TString((std::string("pAux_") + basename).c_str()),
           me_computer->getVal(MELAHypothesis::UsePAux), me_computer
           );
         me_branches.push_back(tmpbranch);
       }
       if (me_opt->hasPConst()){
         tmpbranch = new MELABranch(
-          (TTree*)0, TString((string("pConst_") + basename).c_str()),
+          (TTree*)0, TString((std::string("pConst_") + basename).c_str()),
           me_computer->getVal(MELAHypothesis::UsePConstant), me_computer
           );
         me_branches.push_back(tmpbranch);
       }
       tmpbranch = new MELABranch(
-        (TTree*)0, TString((string("p_") + basename).c_str()),
+        (TTree*)0, TString((std::string("p_") + basename).c_str()),
         me_computer->getVal(MELAHypothesis::UseME), me_computer
         );
       me_branches.push_back(tmpbranch);
@@ -732,7 +732,7 @@ void ZZCandidateFiller::buildMELA(){
 
   if (DEBUG_MB){
     for (unsigned int ib=0; ib<me_branches.size(); ib++) me_branches.at(ib)->Print();
-    for (unsigned int icl=0; icl<me_clusters.size(); icl++) cout << "Reco ME cluster " << me_clusters.at(icl)->getName() << " is present in " << me_clusters.size() << " clusters with #Computations = " << me_clusters.at(icl)->getComputations()->size() << endl;
+    for (unsigned int icl=0; icl<me_clusters.size(); icl++) std::cout << "Reco ME cluster " << me_clusters.at(icl)->getName() << " is present in " << me_clusters.size() << " clusters with #Computations = " << me_clusters.at(icl)->getComputations()->size() << std::endl;
   }
 }
 void ZZCandidateFiller::computeMELABranches(){
@@ -840,7 +840,7 @@ void ZZCandidateFiller::updateMELAClusters_J2JEC(){
         for (unsigned int disableJet=0; disableJet<nGoodJets; disableJet++) melaCand->getAssociatedJet(disableJet)->setSelected((disableJet==firstjet || disableJet==secondjet)); // Disable the other jets
         unsigned int nDisabledStableTops=0;
         for (int itop=0; itop<melaCand->getNAssociatedTops(); itop++){
-          MELATopCandidate* einTop = melaCand->getAssociatedTop(itop);
+          MELATopCandidate_t* einTop = melaCand->getAssociatedTop(itop);
           if (einTop->getNDaughters()==3) einTop->setSelected(false); // All unstable tops are disabled in the loop for jets (where "jet"=="stable top") since we are looping over jecnum
           else{
             einTop->setSelected((nDisabledStableTops==firstjet || nDisabledStableTops==secondjet)); // Disable the other stable tops
@@ -887,7 +887,7 @@ void ZZCandidateFiller::updateMELAClusters_J1JEC(){
     MELACandidate* melaCand = mela->getCurrentCandidate();
     if (melaCand==0) continue;
 
-    unsigned int nGoodJets=min(1, melaCand->getNAssociatedJets());
+    unsigned int nGoodJets=std::min(1, melaCand->getNAssociatedJets());
     for (unsigned int firstjet = 0; firstjet < nGoodJets; firstjet++){ // Loop over first jet
 
       // Disable jets
@@ -917,8 +917,8 @@ void ZZCandidateFiller::pushMELABranches(pat::CompositeCandidate& myCand){
     // Pull...
     me_branches.at(ib)->setVal();
     // ...push...
-//    std::cout<< "MELA calculation "<< string(me_branches.at(ib)->bname.Data())<<"\t"<<me_branches.at(ib)->getVal()<<std::endl;
-    myCand.addUserFloat(string(me_branches.at(ib)->bname.Data()), (float)me_branches.at(ib)->getVal());
+//    std::cout<< "MELA calculation "<< std::string(me_branches.at(ib)->bname.Data())<<"\t"<<me_branches.at(ib)->getVal()<<std::endl;
+    myCand.addUserFloat(std::string(me_branches.at(ib)->bname.Data()), (float)me_branches.at(ib)->getVal());
   }
   // ...then reset
   for (unsigned int ic=0; ic<me_clusters.size(); ic++) me_clusters.at(ic)->reset();

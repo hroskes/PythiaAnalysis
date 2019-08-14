@@ -19,6 +19,8 @@ Implementation:
 
 // system include files
 #include <memory>
+#include <vector>
+#include <string>
 
 
 // user include files
@@ -288,16 +290,16 @@ class MiniAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 
 		void buildMELABranches();
 		void computeMELABranches(MELACandidate* cand);
-		void updateMELAClusters_Common(const string clustertype);
-		void updateMELAClusters_NoInitialQ(const string clustertype);
-		void updateMELAClusters_NoInitialG(const string clustertype);
-		void updateMELAClusters_NoAssociatedG(const string clustertype);
-		void updateMELAClusters_NoInitialGNoAssociatedG(const string clustertype);
-		void updateMELAClusters_BestLOAssociatedZ(const string clustertype);
-		void updateMELAClusters_BestLOAssociatedW(const string clustertype);
-		void updateMELAClusters_BestLOAssociatedVBF(const string clustertype);
-		void updateMELAClusters_BestNLOVHApproximation(const string clustertype);
-		void updateMELAClusters_BestNLOVBFApproximation(const string clustertype);
+		void updateMELAClusters_Common(const std::string clustertype);
+		void updateMELAClusters_NoInitialQ(const std::string clustertype);
+		void updateMELAClusters_NoInitialG(const std::string clustertype);
+		void updateMELAClusters_NoAssociatedG(const std::string clustertype);
+		void updateMELAClusters_NoInitialGNoAssociatedG(const std::string clustertype);
+		void updateMELAClusters_BestLOAssociatedZ(const std::string clustertype);
+		void updateMELAClusters_BestLOAssociatedW(const std::string clustertype);
+		void updateMELAClusters_BestLOAssociatedVBF(const std::string clustertype);
+		void updateMELAClusters_BestNLOVHApproximation(const std::string clustertype);
+		void updateMELAClusters_BestNLOVBFApproximation(const std::string clustertype);
 		void pushRecoMELABranches(const pat::CompositeCandidate& cand);
 		void pushLHEMELABranches();
 		void clearMELABranches();
@@ -319,7 +321,7 @@ class MiniAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		std::vector<MELAHypothesis*> lheme_aliased_units;
 		std::vector<MELAComputation*> lheme_computers;
 		std::vector<MELACluster*> lheme_clusters;
-		string sampleName;
+		std::string sampleName;
 
 		std::vector<std::vector<float> > ewkTable;
 
@@ -357,14 +359,14 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig):
 	mela(13., 125., TVar::ERROR),
 	recoMElist(iConfig.getParameter<std::vector<std::string>>("recoProbabilities")),
 	lheMElist(iConfig.getParameter<std::vector<std::string>>("lheProbabilities")),
-	sampleName(iConfig.getParameter<string>("sampleName")),
+	sampleName(iConfig.getParameter<std::string>("sampleName")),
 	myTree(nullptr),
 	xsec(iConfig.getParameter<double>("xsec")),
 	genxsec(iConfig.getParameter<double>("GenXSEC")),
 	genbr(iConfig.getParameter<double>("GenBR")),
-	theCandLabel(iConfig.getUntrackedParameter<string>("CandCollection")), // Name of input ZZ collection
+	theCandLabel(iConfig.getUntrackedParameter<std::string>("CandCollection")), // Name of input ZZ collection
 
-	theFileName(iConfig.getUntrackedParameter<string>("fileName")),
+	theFileName(iConfig.getUntrackedParameter<std::string>("fileName")),
 	 year(iConfig.getParameter<int>("setup")),
 
 	skipEmptyEvents(iConfig.getParameter<bool>("skipEmptyEvents"))
@@ -375,7 +377,8 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig):
 {
 	//now do what ever initialization is needed
 
-	lheHandler = new LHEHandler(iConfig.getParameter<int>("VVMode"), iConfig.getParameter<int>("VVDecayMode"), true, year);
+        auto vvmode = static_cast<MELAEvent::CandidateVVMode>(iConfig.getParameter<int>("VVMode"));
+	lheHandler = new LHEHandler(vvmode, iConfig.getParameter<int>("VVDecayMode"), (true ? LHEHandler::doHiggsKinematics : LHEHandler::noKinematics), year, LHEHandler::tryNNPDF30, LHEHandler::tryNLO);
 	genInfoToken = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
 	consumesMany<LHEEventProduct>();
 	candToken = consumes<edm::View<pat::CompositeCandidate> >(edm::InputTag(theCandLabel));
@@ -473,7 +476,7 @@ void MiniAnalyzer::computeMELABranches(MELACandidate* cand){
 	mela.resetInputEvent();
 }
 // Common ME computations that do not manipulate the LHE candidate
-void MiniAnalyzer::updateMELAClusters_Common(const string clustertype){
+void MiniAnalyzer::updateMELAClusters_Common(const std::string clustertype){
 	MELACandidate* melaCand = mela.getCurrentCandidate();
 	if (melaCand==0) return;
 
@@ -488,7 +491,7 @@ void MiniAnalyzer::updateMELAClusters_Common(const string clustertype){
 	}
 }
 // ME computations that require no quark initial state
-void MiniAnalyzer::updateMELAClusters_NoInitialQ(const string clustertype){
+void MiniAnalyzer::updateMELAClusters_NoInitialQ(const std::string clustertype){
 	MELACandidate* melaCand = mela.getCurrentCandidate();
 	if (melaCand==0) return;
 
@@ -514,7 +517,7 @@ void MiniAnalyzer::updateMELAClusters_NoInitialQ(const string clustertype){
 	for (int imot=0; imot<melaCand->getNMothers(); imot++) melaCand->getMother(imot)->id = motherIds.at(imot); // Restore all mother ids
 }
 // ME computations that require no gluon initial state
-void MiniAnalyzer::updateMELAClusters_NoInitialG(const string clustertype){
+void MiniAnalyzer::updateMELAClusters_NoInitialG(const std::string clustertype){
 	MELACandidate* melaCand = mela.getCurrentCandidate();
 	if (melaCand==0) return;
 
@@ -540,7 +543,7 @@ void MiniAnalyzer::updateMELAClusters_NoInitialG(const string clustertype){
 	for (int imot=0; imot<melaCand->getNMothers(); imot++) melaCand->getMother(imot)->id = motherIds.at(imot); // Restore all mother ids
 }
 // ME computations that require no gluons as associated particles
-void MiniAnalyzer::updateMELAClusters_NoAssociatedG(const string clustertype){
+void MiniAnalyzer::updateMELAClusters_NoAssociatedG(const std::string clustertype){
 	MELACandidate* melaCand = mela.getCurrentCandidate();
 	if (melaCand==0) return;
 
@@ -566,7 +569,7 @@ void MiniAnalyzer::updateMELAClusters_NoAssociatedG(const string clustertype){
 	for (int ijet=0; ijet<melaCand->getNAssociatedJets(); ijet++) melaCand->getAssociatedJet(ijet)->id = ajetIds.at(ijet); // Restore all jets
 }
 // ME computations that require no gluon initial state and no gluons as associated particles
-void MiniAnalyzer::updateMELAClusters_NoInitialGNoAssociatedG(const string clustertype){
+void MiniAnalyzer::updateMELAClusters_NoInitialGNoAssociatedG(const std::string clustertype){
 	MELACandidate* melaCand = mela.getCurrentCandidate();
 	if (melaCand==0) return;
 
@@ -598,7 +601,7 @@ void MiniAnalyzer::updateMELAClusters_NoInitialGNoAssociatedG(const string clust
 	for (int ijet=0; ijet<melaCand->getNAssociatedJets(); ijet++) melaCand->getAssociatedJet(ijet)->id = ajetIds.at(ijet); // Restore all jets
 }
 // ME computations that require best Z, W or VBF topology at LO (no gluons)
-void MiniAnalyzer::updateMELAClusters_BestLOAssociatedZ(const string clustertype){
+void MiniAnalyzer::updateMELAClusters_BestLOAssociatedZ(const std::string clustertype){
 	MELACandidate* melaCand = mela.getCurrentCandidate();
 	if (melaCand==0) return;
 
@@ -672,7 +675,7 @@ void MiniAnalyzer::updateMELAClusters_BestLOAssociatedZ(const string clustertype
 		}
 	}
 }
-void MiniAnalyzer::updateMELAClusters_BestLOAssociatedW(const string clustertype){
+void MiniAnalyzer::updateMELAClusters_BestLOAssociatedW(const std::string clustertype){
 	MELACandidate* melaCand = mela.getCurrentCandidate();
 	if (melaCand==0) return;
 
@@ -746,7 +749,7 @@ void MiniAnalyzer::updateMELAClusters_BestLOAssociatedW(const string clustertype
 		}
 	}
 }
-void MiniAnalyzer::updateMELAClusters_BestLOAssociatedVBF(const string clustertype){
+void MiniAnalyzer::updateMELAClusters_BestLOAssociatedVBF(const std::string clustertype){
 	// Same as updateMELAClusters_NoInitialGNoAssociatedG, but keep a separate function for future studies
 	MELACandidate* melaCand = mela.getCurrentCandidate();
 	if (melaCand==0) return;
@@ -781,7 +784,7 @@ void MiniAnalyzer::updateMELAClusters_BestLOAssociatedVBF(const string clusterty
 // ME computations that can approximate the NLO QCD (-/+ MiNLO extra jet) phase space to LO QCD in signal VBF or VH
 // Use these for POWHEG samples
 // MELACandidateRecaster has very specific use cases, so do not use these functions for other cases.
-void MiniAnalyzer::updateMELAClusters_BestNLOVHApproximation(const string clustertype){
+void MiniAnalyzer::updateMELAClusters_BestNLOVHApproximation(const std::string clustertype){
 	MELACandidate* melaCand = mela.getCurrentCandidate();
 	if (melaCand==0) return;
 
@@ -798,8 +801,8 @@ void MiniAnalyzer::updateMELAClusters_BestNLOVHApproximation(const string cluste
 
 	// Need one recaster for each of ZH and WH, so distinguish by the cluster name
 	TVar::Production candScheme;
-	if (clustertype.find("BestNLOZHApproximation")!=string::npos) candScheme = TVar::Had_ZH;
-	else if (clustertype.find("BestNLOWHApproximation")!=string::npos) candScheme = TVar::Had_WH;
+	if (clustertype.find("BestNLOZHApproximation")!=std::string::npos) candScheme = TVar::Had_ZH;
+	else if (clustertype.find("BestNLOWHApproximation")!=std::string::npos) candScheme = TVar::Had_WH;
 	else return;
 
 	MELACandidateRecaster recaster(candScheme);
@@ -825,7 +828,7 @@ void MiniAnalyzer::updateMELAClusters_BestNLOVHApproximation(const string cluste
 	delete candModified;
 	mela.setCurrentCandidate(melaCand); // Go back to the original candidate
 }
-void MiniAnalyzer::updateMELAClusters_BestNLOVBFApproximation(const string clustertype){
+void MiniAnalyzer::updateMELAClusters_BestNLOVBFApproximation(const std::string clustertype){
 	MELACandidate* melaCand = mela.getCurrentCandidate();
 	if (melaCand==0) return;
 
@@ -842,7 +845,7 @@ void MiniAnalyzer::updateMELAClusters_BestNLOVBFApproximation(const string clust
 
 	// Need one recaster for VBF
 	TVar::Production candScheme;
-	if (clustertype.find("BestNLOVBFApproximation")!=string::npos) candScheme = TVar::JJVBF;
+	if (clustertype.find("BestNLOVBFApproximation")!=std::string::npos) candScheme = TVar::JJVBF;
 	else return;
 
 	MELACandidateRecaster recaster(candScheme);
@@ -873,7 +876,7 @@ void MiniAnalyzer::pushRecoMELABranches(const pat::CompositeCandidate& cand){
 		std::string branchname = recome_branches->at(ib)->bname.Data();
 //		std::cout <<"pushing branch "<< branchname<< "\t"<<cand.userFloat(branchname)<<std::endl;
 		if (cand.hasUserFloat(branchname)) recome_branches->at(ib)->setValue((Float_t)cand.userFloat(branchname));
-		else cerr << "MiniAnalyzer::pushRecoMELABranches: Candidate does not contain the reco ME " << branchname << " it should have calculated!" << endl;
+		else std::cerr << "MiniAnalyzer::pushRecoMELABranches: Candidate does not contain the reco ME " << branchname << " it should have calculated!" << std::endl;
 	}
 }
 void MiniAnalyzer::pushLHEMELABranches(){
@@ -927,7 +930,7 @@ void MiniAnalyzer::FillLHECandidate(){
 			LHEMotherId.push_back((short)apart->id);
 		}
 
-		for (int iV=0; iV<min(2, cand->getNSortedVs()); iV++){
+		for (int iV=0; iV<std::min(2, cand->getNSortedVs()); iV++){
 			MELAParticle* Vi = cand->getSortedV(iV);
 			if (Vi!=0){
 				for (int iVj=0; iVj<Vi->getNDaughters(); iVj++){
@@ -948,8 +951,8 @@ void MiniAnalyzer::FillLHECandidate(){
 			}
 		}
 
-		vector<MELAParticle*> AssociatedParticle;
-		vector<MELAParticle*> tmpAssociatedParticle;
+		std::vector<MELAParticle*> AssociatedParticle;
+		std::vector<MELAParticle*> tmpAssociatedParticle;
 		for (int aa=0; aa<cand->getNAssociatedJets(); aa++){
 			MELAParticle* apart = cand->getAssociatedJet(aa);
 			tmpAssociatedParticle.push_back(apart);
@@ -1011,11 +1014,9 @@ void MiniAnalyzer::FillLHECandidate(){
 			edm::LogWarning("InconsistentWeights") << "Gen weight is 1, LHE weight is " << genHEPMCweight;
 		}
 	}
-		if (year == 2017) {
-	genHEPMCweight *= lheHandler->reweightNNLOtoNLO();
-		}
+	genHEPMCweight *= lheHandler->getWeightRescale();
 
-	genHEPMCweight_POWHEGonly = lheHandler->getPowhegOriginalWeight();
+	genHEPMCweight_POWHEGonly = lheHandler->getMemberZeroWeight();
 }
 
 
@@ -1112,7 +1113,7 @@ MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 	addweight(Nevt_Gen_lumiBlock, 1); // Needs to be outside the if-block
 
 	edm::Handle<LHEEventProduct> lhe_evt;
-	vector<edm::Handle<LHEEventProduct> > lhe_handles;
+	std::vector<edm::Handle<LHEEventProduct> > lhe_handles;
 	iEvent.getManyByType(lhe_handles);
 	if (lhe_handles.size()>0){
 		lhe_evt = lhe_handles.front();
@@ -1204,7 +1205,7 @@ MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 		FillJet(jetc); // No additional pT cut (for JEC studies)
 	}
 	int nFilled=0;
-	vector<Int_t> CRFLAG(cands->size());
+	std::vector<Int_t> CRFLAG(cands->size());
 
 	for( edm::View<pat::CompositeCandidate>::const_iterator cand = cands->begin(); cand != cands->end(); ++cand) {
 		size_t icand= cand-cands->begin();
@@ -1551,7 +1552,7 @@ void MiniAnalyzer::buildMELABranches(){
 	/***********************/
 	for (unsigned int it=0; it<recoMElist.size(); it++){
 		MELAOptionParser* me_opt = new MELAOptionParser(recoMElist.at(it));
-		if (recoMElist.at(it).find("Copy")!=string::npos) recome_copyopts.push_back(me_opt);
+		if (recoMElist.at(it).find("Copy")!=std::string::npos) recome_copyopts.push_back(me_opt);
 		else recome_originalopts.push_back(me_opt);
 	}
 	// Resolve original options
@@ -1584,7 +1585,7 @@ void MiniAnalyzer::buildMELABranches(){
 		MELAOptionParser* lheme_opt;
 		// First find out if the option has a copy specification
 		// These copy options will be evaulated in a separate loop
-		if (lheMElist.at(it).find("Copy")!=string::npos){
+		if (lheMElist.at(it).find("Copy")!=std::string::npos){
 			lheme_opt = new MELAOptionParser(lheMElist.at(it));
 			lheme_copyopts.push_back(lheme_opt);
 			continue;
@@ -1640,7 +1641,7 @@ void MiniAnalyzer::buildMELABranches(){
 	if (DEBUG_MB){
 		std::vector<MELABranch*>* lheme_branches = myTree->getLHEMELABranches();
 		for (unsigned int ib=0; ib<lheme_branches->size(); ib++) lheme_branches->at(ib)->Print();
-		for (unsigned int icl=0; icl<lheme_clusters.size(); icl++) cout << "LHE ME cluster " << lheme_clusters.at(icl)->getName() << " is present in " << lheme_clusters.size() << " clusters with #Computations = " << lheme_clusters.at(icl)->getComputations()->size() << endl;
+		for (unsigned int icl=0; icl<lheme_clusters.size(); icl++) std::cout << "LHE ME cluster " << lheme_clusters.at(icl)->getName() << " is present in " << lheme_clusters.size() << " clusters with #Computations = " << lheme_clusters.at(icl)->getComputations()->size() << std::endl;
 	}
 }
 
@@ -1690,10 +1691,10 @@ void MiniAnalyzer::FillCandidate(const pat::CompositeCandidate& cand, bool evtPa
 	//Z1 and Z2 variables
 	const reco::Candidate* Z1;
 	const reco::Candidate* Z2;
-	vector<const reco::Candidate*> leptons;
-	vector<const reco::Candidate*> fsrPhot;
-	vector<short> fsrIndex;
-	vector<string> labels;
+	std::vector<const reco::Candidate*> leptons;
+	std::vector<const reco::Candidate*> fsrPhot;
+	std::vector<short> fsrIndex;
+	std::vector<std::string> labels;
 
 	Z1   = cand.daughter("Z1");
 	Z2   = cand.daughter("Z2");

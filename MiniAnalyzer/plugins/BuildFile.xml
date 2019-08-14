@@ -14,7 +14,6 @@
 <use name="MelaAnalytics/EventContainer"/>
 <use name="MelaAnalytics/GenericMEComputer"/>
 <use name="PythiaAnalysis/MiniAnalyzer"/>
-<use name="ZZMatrixElement/MEKD"/>
 <use name="ZZMatrixElement/MELA"/>
-<use name="ZZMatrixElement/MEMCalculators"/>
+<use name="CommonLHETools/LHEHandler"/>
 <flags CPPFLAGS="-I$(CMSSW_BASE)/src/ZZMatrixElement/MELA/interface/" />

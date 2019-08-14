@@ -25,6 +25,8 @@ namespace Comparators {
 
   struct BestCandComparator {
     const pat::CompositeCandidateCollection& candCollection;
+
+    virtual ~BestCandComparator() {}
     
     BestCandComparator(const pat::CompositeCandidateCollection& candCollection, ComparatorTypes type):
       candCollection(candCollection),
