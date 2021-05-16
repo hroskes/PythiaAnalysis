@@ -64,14 +64,18 @@ process.ZZCand = cms.EDProducer("ZZCandidateFiller",
 		src = cms.InputTag("bareZZCand"),
 		)
 
+try: VVMODE
+except: VVMODE = 2
 
+try: VVDECAYMODE
+except: VVDECAYMODE = 0
 
 
 process.ZZTree= cms.EDAnalyzer('MiniAnalyzer',
 		genjet = cms.InputTag("cleanJets"),
 		pruned = cms.InputTag("prunedGenParticles"),
-		VVDecayMode = cms.int32(0),
-		VVMode = cms.int32(1),
+		VVDecayMode = cms.int32(VVDECAYMODE),
+		VVMode = cms.int32(VVMODE),
 		setup = cms.int32(LEPTON_SETUP),
 		failedTreeLevel = cms.int32(2),
 		fileName = cms.untracked.string('candTree'),

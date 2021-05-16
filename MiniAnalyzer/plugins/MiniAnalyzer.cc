@@ -1004,7 +1004,7 @@ void MiniAnalyzer::FillLHECandidate(){
 
 		computeMELABranches(cand);
 		pushLHEMELABranches();
-	}
+	} else throw cms::Exception("HeshyError") << "error 2";
 
 	LHEPDFScale = lheHandler->getPDFScale();
 	if (genHEPMCweight==1.) {
@@ -1121,7 +1121,9 @@ MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 		lheHandler->extract();
 		FillLHECandidate(); // Also writes weights
 		lheHandler->clear();
-	}
+	} else {
+            throw cms::Exception("HeshyError") << "error 1";
+        }
 	bool gen_ZZ4lInEtaAcceptance = false;   // All 4 gen leptons in eta acceptance
 	bool gen_ZZ4lInEtaPtAcceptance = false; // All 4 gen leptons in eta,pT acceptance
 

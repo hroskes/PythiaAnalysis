@@ -49,6 +49,9 @@ LHE_ProdProbabilities_SpinZero_JHUGen = [
    "Name:HJJ_SIG_ghg4_1_JHUGen Process:SelfDefine_spin0 Production:JJQCD MatrixElement:JHUGen Couplings:ghg4=1,0 Options:DivideP=SampleProductionHypothesisJHUGen Cluster:BestLOAssociatedVBF isGen:1",
    "Name:HJJ_SIG_ghg2_1_ghg4_1_JHUGen Process:SelfDefine_spin0 Production:JJQCD MatrixElement:JHUGen Couplings:ghg2=1,0;ghg4=1,0 Options:DivideP=SampleProductionHypothesisJHUGen Cluster:BestLOAssociatedVBF isGen:1",
    "Name:HJJ_SIG_ghg2_1_ghg4_i_JHUGen Process:SelfDefine_spin0 Production:JJQCD MatrixElement:JHUGen Couplings:ghg2=1,0;ghg4=0,1 Options:DivideP=SampleProductionHypothesisJHUGen Cluster:BestLOAssociatedVBF isGen:1",
+   "Name:JJQCD_InitialQQ_SIG_ghg2_1_JHUGen_JECNominal Alias:<Name> Process:HSMHiggs Production:JJQCD MatrixElement:JHUGen Cluster:BestLOAssociatedVBF ForceIncomingFlavors:-21,-21 DefaultME:-1 isGen:1",
+   "Name:JJQCD_InitialQQ_SIG_ghg4_1_JHUGen_JECNominal Alias:<Name> Process:H0minus Production:JJQCD MatrixElement:JHUGen Cluster:BestLOAssociatedVBF ForceIncomingFlavors:-21,-21 DefaultME:-1 isGen:1",
+   "Name:JJQCD_InitialQQ_SIG_ghg2_1_ghg4_1_JHUGen_JECNominal Process:SelfDefine_spin0 Production:JJQCD MatrixElement:JHUGen Cluster:BestLOAssociatedVBF ForceIncomingFlavors:-21,-21 Couplings:ghg2=1,0;ghg4=1,0 Options:SubtractP=JJQCD_SIG_ghg2_1_JHUGen_JECNominal,JJQCD_SIG_ghg4_1_JHUGen_JECNominal DefaultME:-1 isGen:1",
 ]
 
 # Construct the final list
@@ -70,5 +73,5 @@ for name in (
         tree = getattr(process, name)
         #turn on failedTree keeping the most relevant information
         tree.lheProbabilities.extend(theLHEProbabilities)
-        if name == "ZZTree" and tree.skipEmptyEvents:
-            tree.failedTreeLevel = max(tree.failedTreeLevel.value(), LHEFailedTree)
+#        if name == "ZZTree" and tree.skipEmptyEvents:
+#            tree.failedTreeLevel = max(tree.failedTreeLevel.value(), LHEFailedTree)

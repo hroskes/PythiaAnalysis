@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-from ZZAnalysis.AnalysisStep import miscenums
+from PythiaAnalysis.MiniAnalyzer import miscenums
 
 class DummyThingThatHasAnyAttribute(object):
     def __getattr__(self, attr):

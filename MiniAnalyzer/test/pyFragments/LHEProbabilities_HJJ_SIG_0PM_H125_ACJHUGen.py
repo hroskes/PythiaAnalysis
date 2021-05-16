@@ -73,5 +73,5 @@ for name in (
         tree = getattr(process, name)
         #turn on failedTree keeping the most relevant information
         tree.lheProbabilities.extend(theLHEProbabilities)
-##        if name == "ZZTree" and tree.skipEmptyEvents:
-##            tree.failedTreeLevel = max(tree.failedTreeLevel.value(), LHEFailedTree)
+#        if name == "ZZTree" and tree.skipEmptyEvents:
+#            tree.failedTreeLevel = max(tree.failedTreeLevel.value(), LHEFailedTree)
