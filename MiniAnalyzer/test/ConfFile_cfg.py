@@ -52,14 +52,14 @@ process.bareZZCand = cms.EDProducer("CandViewShallowCloneCombiner",
 process.ZZCand = cms.EDProducer("ZZCandidateFiller",
 		ZRolesByMass = cms.bool(True),
 		bestCandAmong = cms.PSet(
-			isBestCand = cms.string("daughter(\'Z1\').mass>40 && daughter(\'Z1\').mass<120&&daughter(\'Z2\').mass>4  && daughter(\'Z2\').mass<120&&userFloat(\'mLL4\')>4&&userFloat(\'pt1\')>20 && userFloat(\'pt2\')>10&&mass>70&&userFloat(\'passSmartMLL\')&&daughter(\'Z2\').mass>12")
+			isBestCand = cms.string("daughter(\'Z1\').mass>12 && daughter(\'Z1\').mass<120&&daughter(\'Z2\').mass>4  && daughter(\'Z2\').mass<120&&userFloat(\'mLL4\')>4&&userFloat(\'pt1\')>20 && userFloat(\'pt2\')>10&&mass>70&&userFloat(\'passSmartMLL\')&&daughter(\'Z2\').mass>12")
 			),
 		bestCandComparator = cms.string('byBestKD'),
 		flags = cms.PSet(
-			FullSel = cms.string("daughter(\'Z1\').mass>40 && daughter(\'Z1\').mass<120&&daughter(\'Z2\').mass>4  && daughter(\'Z2\').mass<120&&userFloat(\'mLL4\')>4&&userFloat(\'pt1\')>20 && userFloat(\'pt2\')>10&&mass>70&&userFloat(\'passSmartMLL\')&&daughter(\'Z2\').mass>12&&mass>100"),
-			FullSel70 = cms.string("daughter(\'Z1\').mass>40 && daughter(\'Z1\').mass<120&&daughter(\'Z2\').mass>4  && daughter(\'Z2\').mass<120&&userFloat(\'mLL4\')>4&&userFloat(\'pt1\')>20 && userFloat(\'pt2\')>10&&mass>70&&userFloat(\'passSmartMLL\')&&daughter(\'Z2\').mass>12"),
+			FullSel = cms.string("daughter(\'Z1\').mass>12 && daughter(\'Z1\').mass<120&&daughter(\'Z2\').mass>4  && daughter(\'Z2\').mass<120&&userFloat(\'mLL4\')>4&&userFloat(\'pt1\')>20 && userFloat(\'pt2\')>10&&mass>70&&userFloat(\'passSmartMLL\')&&daughter(\'Z2\').mass>12&&mass>100"),
+			FullSel70 = cms.string("daughter(\'Z1\').mass>12 && daughter(\'Z1\').mass<120&&daughter(\'Z2\').mass>4  && daughter(\'Z2\').mass<120&&userFloat(\'mLL4\')>4&&userFloat(\'pt1\')>20 && userFloat(\'pt2\')>10&&mass>70&&userFloat(\'passSmartMLL\')&&daughter(\'Z2\').mass>12"),
 			MAllComb = cms.string("userFloat(\'mLL4\')>4"),
-			SR = cms.string("daughter(\'Z1\').mass>40 && daughter(\'Z1\').mass<120&&daughter(\'Z2\').mass>4  && daughter(\'Z2\').mass<120&&userFloat(\'mLL4\')>4&&userFloat(\'pt1\')>20 && userFloat(\'pt2\')>10&&mass>70&&userFloat(\'passSmartMLL\')&&daughter(\'Z2\').mass>12"),
+			SR = cms.string("daughter(\'Z1\').mass>12 && daughter(\'Z1\').mass<120&&daughter(\'Z2\').mass>4  && daughter(\'Z2\').mass<120&&userFloat(\'mLL4\')>4&&userFloat(\'pt1\')>20 && userFloat(\'pt2\')>10&&mass>70&&userFloat(\'passSmartMLL\')&&daughter(\'Z2\').mass>12"),
 			Z2Mass = cms.string("daughter(\'Z2\').mass>4  && daughter(\'Z2\').mass<120")
 			),
 		recoProbabilities = cms.vstring( ('Name:GG_SIG_ghg2_1_ghz1_1_JHUGen Alias:<Name> Process:HSMHiggs Production:ZZGG MatrixElement:JHUGen Options:AddPConst=1',
