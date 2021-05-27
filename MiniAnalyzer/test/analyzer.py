@@ -34,7 +34,7 @@ process.bareZCand = cms.EDProducer("PATCandViewShallowCloneCombiner",
 
 process.ZCand = cms.EDProducer("ZCandidateFiller",
 		FSRMode = cms.string('RunII'),
-		bestZAmong = cms.string(" mass > 40 && mass < 120"),
+		bestZAmong = cms.string(" mass > 12 && mass < 120"),
 		src = cms.InputTag("bareZCand")
 		)
 
