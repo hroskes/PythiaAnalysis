@@ -1,0 +1,9 @@
+*.tbl
+*.LHgrid
+br.sm*
+*.pyc
+ffwarn.dat
+input.DAT
+process.DAT
+*.lhe
+*.root
