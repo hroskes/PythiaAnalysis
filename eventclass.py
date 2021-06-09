@@ -168,6 +168,58 @@ class Event(object):
   def LepLepId(self):
     return [id for id, p in self.sortedleptons]
 
+  @methodtools.lru_cache()
+  @property
+  def sortedextraleptons(self):
+    return sorted(((id, p) for id, p in self.__reco.associated if abs(id) in (11, 13)), key=lambda x: x.second.Pt())
+  @property
+  def ExtraLepPt(self): return [p.Pt() for id, p in self.sortedextraleptons]
+  @property
+  def ExtraLepEta(self): return [p.Eta() for id, p in self.sortedextraleptons]
+  @property
+  def ExtraLepPhi(self): return [p.Phi() for id, p in self.sortedextraleptons]
+  @property
+  def ExtraLepLepId(self): return [id for id, p in self.sortedextraleptons]
+  @property
+  def nExtraLep(self):
+    return len(self.sortedextraleptons)
+  @property
+  def nExtraZ(self):
+    nep = nem = nmp = nmm = 0
+    for id, p in self.sortedextraleptons:
+      if id == +11: nem += 1
+      if id == -11: nep += 1
+      if id == +13: nmm += 1
+      if id == -13: nmp += 1
+    return min(nem, nep) + min(nmm, nmp)
+
+  @methodtools.lru_cache()
+  @property
+  def sortedjets(self):
+    return sorted(((id, p) for id, p in self.__reco.associated if id == 0), key=lambda x: x.second.Pt())
+  @property
+  def JetPt(self): return [p.Pt() for id, p in self.sortedjets]
+  @property
+  def JetEta(self): return [p.Eta() for id, p in self.sortedjets]
+  @property
+  def JetPhi(self): return [p.Phi() for id, p in self.sortedjets]
+  @property
+  def JetMass(self): return [p.M() for id, p in self.sortedjets]
+  @property
+  def DiJetMass(self):
+    try:
+      (id1, p1), (id2, p2) = self.sortedjets[:2]
+    except ValueError:
+      return -99
+    return (p1+p2).M()
+  @property
+  def DiJetDEta(self):
+    try:
+      (id1, p1), (id2, p2) = self.sortedjets[:2]
+    except ValueError:
+      return -99
+    return p1.Eta()-p2.Eta()
+
   @classmethod
   def branches(cls):
     return [
@@ -208,7 +260,6 @@ class Event(object):
       "LepEta",
       "LepPhi",
       "LepLepId",
-    ] or [
       "JetPt",
       "JetEta",
       "JetPhi",
@@ -221,6 +272,7 @@ class Event(object):
       "ExtraLepEta",
       "ExtraLepPhi",
       "ExtraLepLepId",
+    ] or [
       "ZXFakeweight",
       "KFactor_QCD_ggZZ_Nominal",
       "genFinalState",

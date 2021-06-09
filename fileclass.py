@@ -201,6 +201,18 @@ class CJLHEFile(contextlib2.ExitStack):
       VectorBranch("LepEta", float),
       VectorBranch("LepPhi", float),
       VectorBranch("LepLepId", "short"),
+      VectorBranch("JetPt", float),
+      VectorBranch("JetEta", float),
+      VectorBranch("JetPhi", float),
+      VectorBranch("JetMass", float),
+      NormalBranch("DiJetMass", float32),
+      NormalBranch("DiJetDEta", float32),
+      NormalBranch("nExtraLep", int),
+      NormalBranch("nExtraZ", int),
+      VectorBranch("ExtraLepPt", float),
+      VectorBranch("ExtraLepEta", float),
+      VectorBranch("ExtraLepPhi", float),
+      VectorBranch("ExtraLepLepId", "short"),
     ]
 
   def __enter__(self):
