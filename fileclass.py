@@ -213,6 +213,18 @@ class CJLHEFile(contextlib2.ExitStack):
       VectorBranch("ExtraLepEta", float),
       VectorBranch("ExtraLepPhi", float),
       VectorBranch("ExtraLepLepId", "short"),
+      NormalBranch("genFinalState", int),
+      NormalBranch("trigEffWeight", float32),
+      NormalBranch("dataMCWeight", float32),
+      NormalBranch("KFactor_QCD_ggZZ_Nominal", float32),
+      NormalBranch("genHEPMCweight_NNLO", float32),
+      NormalBranch("HqTMCweight", float32),
+      NormalBranch("ZXFakeweight", float32),
+      NormalBranch("PUWeight", float32),
+      NormalBranch("genHEPMCweight", float32),
+      NormalBranch("overallEventWeight", float32),
+      NormalBranch("genHEPMCweight_POWHEGonly", float32),
+      NormalBranch("genProcessId", int),
     ]
 
   def __enter__(self):

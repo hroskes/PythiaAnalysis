@@ -220,6 +220,95 @@ class Event(object):
       return -99
     return p1.Eta()-p2.Eta()
 
+  @property
+  def ZXFakeweight(self): return 0
+  @property
+  def dataMCWeight(self): return 1
+  @property
+  def trigEffWeight(self): return 1
+  @property
+  def overallEventWeight(self): return self.genHEPMCweight
+  @property
+  def HqTMCweight(self): return 1
+  @property
+  def PUWeight(self): return 1
+  @property
+  def genHEPMCweight_NNLO(self): return self.genHEPMCweight
+  @property
+  def genHEPMCweight_POWHEGonly(self): return self.genHEPMCweight
+  @property
+  def trigEffWeight(self): return 1
+  @property
+  def genFinalState(self):
+    return {
+      169*169: 0,
+      121*121: 1,
+      169*121: 2,
+    }[self.GenZ1Flav*self.GenZ2Flav]
+  @property
+  def genProcessId(self): return 0
+  @property
+  def genHEPMCweight(self): return self.__gen.weight
+  @property
+  def KFactor_QCD_ggZZ_Nominal(self): return 1.25752
+
+  @methodtools.lru_cache()
+  @property
+  def Gensortedleptons(self):
+    possibleZs = [sorted(pair, key=lambda x: x.first) for pair in itertools.combinations(self.__gen.daughters, 2) if abs(pair[0].first) in {11, 13} and sum(p.first for p in pair) == 0]
+    Z1pair = min(possibleZs, key=lambda x: abs(sum((p for id, p in x), ROOT.TLorentzVector()).M()-125))
+    l1p, l1m = Z1pair
+    Z2pair, = {(l2p, l2m) for l2p, l2m in possibleZs if l2p is not l1p and l2m is not l1m}
+    return Z1pair[0], Z1pair[1], Z2pair[0], Z2pair[1]
+  @methodtools.lru_cache()
+  @property
+  def GenZ1(self): return self.Gensortedleptons[:2]
+  @methodtools.lru_cache()
+  @property
+  def GenZ1p4(self): return sum((p for id, p in self.GenZ1), ROOT.TLorentzVector())
+  @methodtools.lru_cache()
+  @property
+  def GenZ2(self): return self.Gensortedleptons[2:]
+  @methodtools.lru_cache()
+  @property
+  def GenZ2p4(self): return sum((p for id, p in self.GenZ2), ROOT.TLorentzVector())
+  @methodtools.lru_cache()
+  @property
+  def GenZ1Mass(self): return self.GenZ1p4.M()
+  @property
+  def GenZ1Pt(self): return self.GenZ1p4.Pt()
+  @methodtools.lru_cache()
+  @property
+  def GenZ1Flav(self): return np.product([id for id, p in self.GenZ1])
+  @methodtools.lru_cache()
+  @property
+  def GenZ2Mass(self): return self.GenZ2p4.M()
+  @property
+  def GenZ2Pt(self): return self.GenZ2p4.Pt()
+  @methodtools.lru_cache()
+  @property
+  def GenZ2Flav(self): return np.product([id for id, p in self.GenZ2])
+  @methodtools.lru_cache()
+  @property
+  def Gendecayangles(self):
+    angles = self.__gen.computeDecayAngles()
+    np.testing.assert_almost_equal(angles.qH, self.GenHMass, decimal=5)
+    np.testing.assert_almost_equal(angles.m1, self.GenZ1Mass, decimal=5)
+    np.testing.assert_almost_equal(angles.m2, self.GenZ2Mass, decimal=5)
+    return angles
+  @property
+  def Gencosthetastar(self): return self.Gendecayangles.costhetastar
+  @property
+  def Genhelphi(self): return self.Gendecayangles.Phi
+  @property
+  def GenhelcosthetaZ1(self): return self.Gendecayangles.costheta1
+  @property
+  def GenhelcosthetaZ2(self): return self.Gendecayangles.costheta2
+  @property
+  def GenphistarZ1(self): return self.Gendecayangles.Phi1
+  @property
+  def GenphistarZ2(self): return 0
+
   @classmethod
   def branches(cls):
     return [
@@ -272,7 +361,6 @@ class Event(object):
       "ExtraLepEta",
       "ExtraLepPhi",
       "ExtraLepLepId",
-    ] or [
       "ZXFakeweight",
       "KFactor_QCD_ggZZ_Nominal",
       "genFinalState",
@@ -285,6 +373,7 @@ class Event(object):
       "trigEffWeight",
       "overallEventWeight",
       "HqTMCweight",
+    ] or [
       "xsec",
       "genxsec",
       "genBR",
