@@ -47,10 +47,13 @@ class LHEFile_Hwithdecay_smear(LHEFileBase):
     return itertools.chain(self.daughters, self.associated)
 
 class Event(object):
-  def __init__(self, i, gen, reco):
+  def __init__(self, i, gen, reco, xsec, genxsec, genBR):
     self.__i = i
     self.__gen = gen
     self.__reco = reco
+    self.__xsec = xsec
+    self.__genxsec = genxsec
+    self.__genBR = genBR
 
   @property
   def RunNumber(self): return 1
@@ -97,7 +100,7 @@ class Event(object):
   @methodtools.lru_cache()
   @property
   def sortedleptons(self):
-    possibleZs = [sorted(pair, key=lambda x: x.first) for pair in itertools.combinations(self.__reco.daughters, 2) if abs(pair[0].first) in {11, 13} and sum(p.first for p in pair) == 0]
+    possibleZs = [sorted(pair, key=lambda x: x[0]) for pair in itertools.combinations(self.__reco.daughters, 2) if abs(pair[0][0]) in {11, 13} and sum(p[0] for p in pair) == 0]
     Z1pair = min(possibleZs, key=lambda x: abs(sum((p for id, p in x), ROOT.TLorentzVector()).M()-125))
     l1p, l1m = Z1pair
     Z2pair, = {(l2p, l2m) for l2p, l2m in possibleZs if l2p is not l1p and l2m is not l1m}
@@ -171,7 +174,7 @@ class Event(object):
   @methodtools.lru_cache()
   @property
   def sortedextraleptons(self):
-    return sorted(((id, p) for id, p in self.__reco.associated if abs(id) in (11, 13)), key=lambda x: x.second.Pt())
+    return sorted(((id, p) for id, p in self.__reco.associated if abs(id) in (11, 13)), key=lambda x: x[1].Pt())
   @property
   def ExtraLepPt(self): return [p.Pt() for id, p in self.sortedextraleptons]
   @property
@@ -196,7 +199,7 @@ class Event(object):
   @methodtools.lru_cache()
   @property
   def sortedjets(self):
-    return sorted(((id, p) for id, p in self.__reco.associated if id == 0), key=lambda x: x.second.Pt())
+    return sorted(((id, p) for id, p in self.__reco.associated if id == 0), key=lambda x: x[1].Pt())
   @property
   def JetPt(self): return [p.Pt() for id, p in self.sortedjets]
   @property
@@ -255,11 +258,22 @@ class Event(object):
   @methodtools.lru_cache()
   @property
   def Gensortedleptons(self):
-    possibleZs = [sorted(pair, key=lambda x: x.first) for pair in itertools.combinations(self.__gen.daughters, 2) if abs(pair[0].first) in {11, 13} and sum(p.first for p in pair) == 0]
+    possibleZs = [sorted(pair, key=lambda x: x[0]) for pair in itertools.combinations(self.__gen.daughters, 2) if abs(pair[0][0]) in {11, 13} and sum(p[0] for p in pair) == 0]
     Z1pair = min(possibleZs, key=lambda x: abs(sum((p for id, p in x), ROOT.TLorentzVector()).M()-125))
     l1p, l1m = Z1pair
     Z2pair, = {(l2p, l2m) for l2p, l2m in possibleZs if l2p is not l1p and l2m is not l1m}
     return Z1pair[0], Z1pair[1], Z2pair[0], Z2pair[1]
+
+  @methodtools.lru_cache()
+  @property
+  def GenHp4(self): return sum((p for id, p in self.__gen.daughters), ROOT.TLorentzVector())
+  @property
+  def GenHMass(self): return self.GenHp4.M()
+  @property
+  def GenHPt(self): return self.GenHp4.Pt()
+  @property
+  def GenHRapidity(self): return self.GenHp4.Rapidity()
+
   @methodtools.lru_cache()
   @property
   def GenZ1(self): return self.Gensortedleptons[:2]
@@ -277,6 +291,8 @@ class Event(object):
   def GenZ1Mass(self): return self.GenZ1p4.M()
   @property
   def GenZ1Pt(self): return self.GenZ1p4.Pt()
+  @property
+  def GenZ1Phi(self): return self.GenZ1p4.Phi()
   @methodtools.lru_cache()
   @property
   def GenZ1Flav(self): return np.product([id for id, p in self.GenZ1])
@@ -285,6 +301,8 @@ class Event(object):
   def GenZ2Mass(self): return self.GenZ2p4.M()
   @property
   def GenZ2Pt(self): return self.GenZ2p4.Pt()
+  @property
+  def GenZ2Phi(self): return self.GenZ2p4.Phi()
   @methodtools.lru_cache()
   @property
   def GenZ2Flav(self): return np.product([id for id, p in self.GenZ2])
@@ -308,6 +326,159 @@ class Event(object):
   def GenphistarZ1(self): return self.Gendecayangles.Phi1
   @property
   def GenphistarZ2(self): return 0
+
+  @methodtools.lru_cache()
+  @property
+  def GenLep1(self): return self.Gensortedleptons[0]
+  @methodtools.lru_cache()
+  @property
+  def GenLep1p4(self): return self.GenLep1[1]
+  @property
+  def GenLep1Pt(self): return self.GenLep1p4.Pt()
+  @property
+  def GenLep1Eta(self): return self.GenLep1p4.Eta()
+  @property
+  def GenLep1Phi(self): return self.GenLep1p4.Phi()
+  @property
+  def GenLep1Id(self): return self.GenLep1[0]
+
+  @methodtools.lru_cache()
+  @property
+  def GenLep2(self): return self.Gensortedleptons[1]
+  @methodtools.lru_cache()
+  @property
+  def GenLep2p4(self): return self.GenLep2[1]
+  @property
+  def GenLep2Pt(self): return self.GenLep2p4.Pt()
+  @property
+  def GenLep2Eta(self): return self.GenLep2p4.Eta()
+  @property
+  def GenLep2Phi(self): return self.GenLep2p4.Phi()
+  @property
+  def GenLep2Id(self): return self.GenLep2[0]
+
+  @methodtools.lru_cache()
+  @property
+  def GenLep3(self): return self.Gensortedleptons[2]
+  @methodtools.lru_cache()
+  @property
+  def GenLep3p4(self): return self.GenLep3[1]
+  @property
+  def GenLep3Pt(self): return self.GenLep3p4.Pt()
+  @property
+  def GenLep3Eta(self): return self.GenLep3p4.Eta()
+  @property
+  def GenLep3Phi(self): return self.GenLep3p4.Phi()
+  @property
+  def GenLep3Id(self): return self.GenLep3[0]
+
+  @methodtools.lru_cache()
+  @property
+  def GenLep4(self): return self.Gensortedleptons[3]
+  @methodtools.lru_cache()
+  @property
+  def GenLep4p4(self): return self.GenLep4[1]
+  @property
+  def GenLep4Pt(self): return self.GenLep4p4.Pt()
+  @property
+  def GenLep4Eta(self): return self.GenLep4p4.Eta()
+  @property
+  def GenLep4Phi(self): return self.GenLep4p4.Phi()
+  @property
+  def GenLep4Id(self): return self.GenLep4[0]
+
+  zerovector = ROOT.TLorentzVector(0, 0, 0, 0)
+
+  @methodtools.lru_cache()
+  @property
+  def Gensortedextraleptons(self):
+    return sorted(((id, p) for id, p in self.__reco.associated if abs(id) in (11, 13)), key=lambda x: x[1].Pt())
+  @methodtools.lru_cache()
+  @property
+  def GenAssocLep1(self):
+    try:
+      return self.Gensortedextraleptons[0]
+    except IndexError:
+      return 0, self.zerovector
+  @methodtools.lru_cache()
+  @property
+  def GenAssocLep1p4(self): return self.GenAssocLep1[1]
+  @property
+  def GenAssocLep1Pt(self): return self.GenAssocLep1p4.Pt()
+  @property
+  def GenAssocLep1Eta(self): return self.GenAssocLep1p4.Eta()
+  @property
+  def GenAssocLep1Phi(self): return self.GenAssocLep1p4.Phi()
+  @property
+  def GenAssocLep1Id(self): return self.GenAssocLep1[0]
+  @methodtools.lru_cache()
+  @property
+  def GenAssocLep2(self):
+    try:
+      return self.Gensortedextraleptons[1]
+    except IndexError:
+      return 0, self.zerovector
+  @methodtools.lru_cache()
+  @property
+  def GenAssocLep2p4(self): return self.GenAssocLep2[1]
+  @property
+  def GenAssocLep2Pt(self): return self.GenAssocLep2p4.Pt()
+  @property
+  def GenAssocLep2Eta(self): return self.GenAssocLep2p4.Eta()
+  @property
+  def GenAssocLep2Phi(self): return self.GenAssocLep2p4.Phi()
+  @property
+  def GenAssocLep2Id(self): return self.GenAssocLep2[0]
+
+  @methodtools.lru_cache()
+  @property
+  def LHEDaughters(self): return self.__gen.daughters
+  @property
+  def LHEDaughterMass(self): return [p.M() for id, p in self.LHEDaughters]
+  @property
+  def LHEDaughterPt(self): return [p.Pt() for id, p in self.LHEDaughters]
+  @property
+  def LHEDaughterEta(self): return [p.Eta() for id, p in self.LHEDaughters]
+  @property
+  def LHEDaughterPhi(self): return [p.Phi() for id, p in self.LHEDaughters]
+  @property
+  def LHEDaughterId(self): return [id for id, p in self.LHEDaughters]
+
+  @methodtools.lru_cache()
+  @property
+  def LHEAssociatedParticles(self): return self.__gen.associated
+  @property
+  def LHEAssociatedParticleMass(self): return [p.M() for id, p in self.LHEAssociatedParticles]
+  @property
+  def LHEAssociatedParticlePt(self): return [p.Pt() for id, p in self.LHEAssociatedParticles]
+  @property
+  def LHEAssociatedParticleEta(self): return [p.Eta() for id, p in self.LHEAssociatedParticles]
+  @property
+  def LHEAssociatedParticlePhi(self): return [p.Phi() for id, p in self.LHEAssociatedParticles]
+  @property
+  def LHEAssociatedParticleId(self): return [id for id, p in self.LHEAssociatedParticles]
+
+  @methodtools.lru_cache()
+  @property
+  def LHEMothers(self): return self.__gen.mothers
+  @property
+  def LHEMotherPz(self): return [p.Pz() for id, p in self.LHEMothers]
+  @property
+  def LHEMotherE(self): return [p.E() for id, p in self.LHEMothers]
+  @property
+  def LHEMotherId(self): return [id for id, p in self.LHEMothers]
+
+  @property
+  def LHEPDFScale(self): return 1
+  @property
+  def genExtInfo(self): return -1
+
+  @property
+  def xsec(self): return self.__xsec
+  @property
+  def genxsec(self): return self.__genxsec
+  @property
+  def genBR(self): return self.__genBR
 
   @classmethod
   def branches(cls):
@@ -373,7 +544,6 @@ class Event(object):
       "trigEffWeight",
       "overallEventWeight",
       "HqTMCweight",
-    ] or [
       "xsec",
       "genxsec",
       "genBR",
@@ -427,6 +597,7 @@ class Event(object):
       "LHEAssociatedParticleMass",
       "LHEAssociatedParticleId",
       "LHEPDFScale",
+    ] or [
       "pConst_GG_SIG_ghg2_1_ghz1_1_JHUGen",
       "p_GG_SIG_ghg2_1_ghz1_1_JHUGen",
       "p_GG_SIG_ghg2_1_ghz1prime2_1E4_JHUGen",

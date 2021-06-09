@@ -1,12 +1,15 @@
-import abc, argparse, contextlib2, more_itertools, pathlib2
+import abc, argparse, contextlib2, csv, methodtools, more_itertools, pathlib2
 
 if __name__ == "__main__":
   p = argparse.ArgumentParser()
   p.add_argument("--lhefilename", type=pathlib2.Path, required=True)
-  p.add_argument("--cjlstfilename", type=pathlib2.Path, required=True)
+  p.add_argument("--cjlstprocess", required=True)
   p.add_argument("--outfilename", type=pathlib2.Path, required=True)
   p.add_argument("--overwrite", action="store_true")
+  p.add_argument("--cjlstfolder", type=pathlib2.Path, default=pathlib2.Path("/work-zfs/lhc/GENtrees/210601_2018MC_photons"))
   args = p.parse_args()
+
+thisfolder = pathlib2.Path(__file__).parent
 
 from eventclass import Event, LHEFile_Hwithdecay, LHEFile_Hwithdecay_smear
 
@@ -142,10 +145,11 @@ class VectorBranch(Branch):
     return self.__vector
 
 class CJLHEFile(contextlib2.ExitStack):
-  def __init__(self, lhefilename, cjlstfilename, outfilename, overwrite=False):
+  def __init__(self, lhefilename, cjlstfolder, cjlstprocess, outfilename, overwrite=False):
     super(CJLHEFile, self).__init__()
     self.__lhefilename = lhefilename
-    self.__cjlstfilename = cjlstfilename
+    self.cjlstfolder = cjlstfolder
+    self.cjlstprocess = cjlstprocess
     self.__outfilename = outfilename
     if overwrite:
       try:
@@ -225,13 +229,71 @@ class CJLHEFile(contextlib2.ExitStack):
       NormalBranch("overallEventWeight", float32),
       NormalBranch("genHEPMCweight_POWHEGonly", float32),
       NormalBranch("genProcessId", int),
+      NormalBranch("xsec", float32),
+      NormalBranch("genxsec", float32),
+      NormalBranch("genBR", float32),
+      NormalBranch("genExtInfo", int),
+      NormalBranch("GenHMass", float32),
+      NormalBranch("GenHPt", float32),
+      NormalBranch("GenHRapidity", float32),
+      NormalBranch("GenZ1Mass", float32),
+      NormalBranch("GenZ1Pt", float32),
+      NormalBranch("GenZ1Phi", float32),
+      NormalBranch("GenZ1Flav", float32),
+      NormalBranch("GenZ2Mass", float32),
+      NormalBranch("GenZ2Pt", float32),
+      NormalBranch("GenZ2Phi", float32),
+      NormalBranch("GenZ2Flav", float32),
+      NormalBranch("GenLep1Pt", float32),
+      NormalBranch("GenLep1Eta", float32),
+      NormalBranch("GenLep1Phi", float32),
+      NormalBranch("GenLep1Id", int),
+      NormalBranch("GenLep2Pt", float32),
+      NormalBranch("GenLep2Eta", float32),
+      NormalBranch("GenLep2Phi", float32),
+      NormalBranch("GenLep2Id", int),
+      NormalBranch("GenLep3Pt", float32),
+      NormalBranch("GenLep3Eta", float32),
+      NormalBranch("GenLep3Phi", float32),
+      NormalBranch("GenLep3Id", int),
+      NormalBranch("GenLep4Pt", float32),
+      NormalBranch("GenLep4Eta", float32),
+      NormalBranch("GenLep4Phi", float32),
+      NormalBranch("GenLep4Id", int),
+      NormalBranch("GenAssocLep1Pt", float32),
+      NormalBranch("GenAssocLep1Eta", float32),
+      NormalBranch("GenAssocLep1Phi", float32),
+      NormalBranch("GenAssocLep1Id", int),
+      NormalBranch("GenAssocLep2Pt", float32),
+      NormalBranch("GenAssocLep2Eta", float32),
+      NormalBranch("GenAssocLep2Phi", float32),
+      NormalBranch("GenAssocLep2Id", int),
+      VectorBranch("LHEMotherPz", float),
+      VectorBranch("LHEMotherE", float),
+      VectorBranch("LHEMotherId", "short"),
+      VectorBranch("LHEDaughterPt", float),
+      VectorBranch("LHEDaughterEta", float),
+      VectorBranch("LHEDaughterPhi", float),
+      VectorBranch("LHEDaughterMass", float),
+      VectorBranch("LHEDaughterId", "short"),
+      VectorBranch("LHEAssociatedParticlePt", float),
+      VectorBranch("LHEAssociatedParticleEta", float),
+      VectorBranch("LHEAssociatedParticlePhi", float),
+      VectorBranch("LHEAssociatedParticleMass", float),
+      VectorBranch("LHEAssociatedParticleId", "short"),
+      NormalBranch("LHEPDFScale", float32),
     ]
+
+  @property
+  def cjlstfilename(self):
+    return self.cjlstfolder/self.cjlstprocess/"ZZ4lAnalysis.root"
 
   def __enter__(self):
     super(CJLHEFile, self).__enter__()
     self.__outfile = self.enter_context(TFile(self.__outfilename, "CREATE", deleteifbad=True))
-    with TFile(self.__cjlstfilename) as CJLSTfile:
-      self.__outfile.cd()
+    ZZTree = self.__outfile.mkdir("ZZTree")
+    with TFile(self.cjlstfilename) as CJLSTfile:
+      ZZTree.cd()
       t = CJLSTfile.Get("ZZTree/candTree")
       self.__t = t.CloneTree(0, "fast")
     for branch in self.__branches:
@@ -248,9 +310,36 @@ class CJLHEFile(contextlib2.ExitStack):
 
     return self
 
+  @methodtools.lru_cache()
+  @property
+  def xsecs(self):
+    with open(fspath(thisfolder/"samples_2018_MC.csv")) as f:
+      reader = csv.DictReader(f)
+      for row in reader:
+        if row["identifier"].strip() == self.cjlstprocess:
+          break
+      else:
+        assert False, self.cjlstprocess
+
+      xsec = float(row["crossSection=-1"])*float(row["BR=1"])
+      variables = {k: v for k, v in (_.split("=") for _ in row["::variables"].split(";"))}
+      genxsec = variables["GENXSEC"]
+      genBR = variables["GENBR"]
+      return xsec, genxsec, genBR
+  @methodtools.lru_cache()
+  @property
+  def xsec(self): return self.xsecs[0]
+  @methodtools.lru_cache()
+  @property
+  def genxsec(self): return self.xsecs[1]
+  @methodtools.lru_cache()
+  @property
+  def genBR(self): return self.xsecs[2]
+      
+
   def __iter__(self):
     for i, (gen, reco) in enumerate(more_itertools.more.zip_longest(self.__gen, self.__reco)):
-      yield Event(i=i, gen=gen, reco=reco)
+      yield Event(i=i, gen=gen, reco=reco, xsec=self.xsec, genxsec=self.genxsec, genBR=self.genBR)
 
   def run(self):
     with self:
