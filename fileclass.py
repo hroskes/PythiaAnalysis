@@ -8,7 +8,7 @@ if __name__ == "__main__":
   p.add_argument("--overwrite", action="store_true")
   args = p.parse_args()
 
-from eventclass import Event, LHEFile_Hwithdecay_smear
+from eventclass import Event, LHEFile_Hwithdecay, LHEFile_Hwithdecay_smear
 
 class NumpyImport(object):
   def __getattr__(self, attr):
@@ -140,23 +140,6 @@ class JetVectorBranch(Branch):
       self.__vector.push_back(value)
     return self.__vector
 
-def branches():
-  return [
-    NormalBranch("RunNumber", int),
-    NormalBranch("LumiNumber", int),
-    NormalBranch("EventNumber", long),
-    NormalBranch("NRecoMu", int),
-    NormalBranch("NRecoEle", int),
-    NormalBranch("Nvtx", int),
-    NormalBranch("NObsInt", int),
-    NormalBranch("NTrueInt", float),
-    NormalBranch("PFMET", float),
-    NormalBranch("nCleanedJets", int),
-    NormalBranch("nCleanedJetsPt30", int),
-    NormalBranch("trigWord", int),
-    NormalBranch("evtPassMETFilter", int),
-  ]
-
 class CJLHEFile(contextlib2.ExitStack):
   def __init__(self, lhefilename, cjlstfilename, outfilename, overwrite=False):
     super(CJLHEFile, self).__init__()
@@ -169,11 +152,49 @@ class CJLHEFile(contextlib2.ExitStack):
       except OSError:
         pass
 
-    self.__branches = branches()
+    self.__branches = self.branches()
 
     branchnames = {branch.name for branch in self.__branches}
     targetbranchnames = set(Event.branches())
     assert branchnames == targetbranchnames, branchnames ^ targetbranchnames
+    bad = {name for name in branchnames if not hasattr(Event, name)}
+    assert not bad, bad
+
+  def branches(self):
+    float32 = np.float32
+    return [
+      NormalBranch("RunNumber", int),
+      NormalBranch("LumiNumber", int),
+      NormalBranch("EventNumber", long),
+      NormalBranch("NRecoMu", int),
+      NormalBranch("NRecoEle", int),
+      NormalBranch("Nvtx", int),
+      NormalBranch("NObsInt", int),
+      NormalBranch("NTrueInt", float),
+      NormalBranch("PFMET", float),
+      NormalBranch("nCleanedJets", int),
+      NormalBranch("nCleanedJetsPt30", int),
+      NormalBranch("trigWord", int),
+      NormalBranch("evtPassMETFilter", int),
+      NormalBranch("CRflag", int),
+      NormalBranch("ZZMass", float32),
+      NormalBranch("ZZsel", int),
+      NormalBranch("ZZPt", float32),
+      NormalBranch("ZZEta", float32),
+      NormalBranch("ZZPhi", float32),
+      NormalBranch("Z1Flav", int),
+      NormalBranch("Z1Mass", float32),
+      NormalBranch("Z1Pt", float32),
+      NormalBranch("Z2Flav", int),
+      NormalBranch("Z2Mass", float32),
+      NormalBranch("Z2Pt", float32),
+      NormalBranch("costhetastar", float32),
+      NormalBranch("helphi", float32),
+      NormalBranch("helcosthetaZ1", float32),
+      NormalBranch("helcosthetaZ2", float32),
+      NormalBranch("phistarZ1", float32),
+
+    ]
 
   def __enter__(self):
     super(CJLHEFile, self).__enter__()
@@ -185,7 +206,7 @@ class CJLHEFile(contextlib2.ExitStack):
     for branch in self.__branches:
       branch.attachtotree(self.__t)
 
-    self.__gen = self.enter_context(LHEFile_Hwithdecay_smear(fspath(self.__lhefilename), isgen=True))
+    self.__gen = self.enter_context(LHEFile_Hwithdecay(fspath(self.__lhefilename), isgen=True))
     self.__reco = self.enter_context(LHEFile_Hwithdecay_smear(fspath(self.__lhefilename), isgen=False))
 
     self.__nentries = 0
@@ -209,6 +230,8 @@ class CJLHEFile(contextlib2.ExitStack):
 
         if (i+1)%10000 == 0 or (i+1) == self.__nentries:
           print i+1, "/", self.__nentries
+          for branch in self.__branches:
+            assert getattr(self.__t, branch.name) == branch.lastsetbranchvalue, (branch.name, getattr(self.__t, branch.name), branch.lastsetbranchvalue)
 
 def main(**kwargs):
   CJLHEFile(**kwargs).run()

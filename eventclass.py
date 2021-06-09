@@ -1,10 +1,18 @@
-import contextlib, itertools, more_itertools, ROOT
-from JHUGenMELA.MELA.lhefile import LHEEvent, LHEFileBase
+import contextlib, itertools, methodtools, more_itertools, ROOT
+from JHUGenMELA.MELA.lhefile import LHEEvent, LHEFileBase, LHEFile_Hwithdecay
+
+class NumpyImport(object):
+  def __getattr__(self, attr):
+    global np
+    import numpy as np
+    return getattr(np, attr)
+np = NumpyImport()
 
 class LHEEvent_Hwithdecay_smear(LHEEvent):
   #smearing is not actually implemented yet
   @classmethod
   def extracteventparticles(cls, lines, isgen):
+    assert not isgen
     daughters, mothers, associated = [], [], []
     ids = [None]
     mother1s = [None]
@@ -70,6 +78,75 @@ class Event(object):
   def evtPassMETFilter(self): return 0
   @property
   def trigWord(self): return 0
+  @methodtools.lru_cache()
+  @property
+  def ZZp4(self): return sum((p for id, p in self.__reco.daughters), ROOT.TLorentzVector())
+  @methodtools.lru_cache()
+  @property
+  def ZZMass(self): return self.ZZp4.M()
+  @property
+  def ZZsel(self): return 0
+  @property
+  def ZZPt(self): return self.ZZp4.Pt()
+  @property
+  def ZZEta(self): return self.ZZp4.Eta()
+  @property
+  def ZZPhi(self): return self.ZZp4.Phi()
+  @property
+  def CRflag(self): return 0
+  @methodtools.lru_cache()
+  @property
+  def sortedleptons(self):
+    possibleZs = [sorted(pair, key=lambda x: x.first) for pair in itertools.combinations(self.__reco.daughters, 2) if abs(pair[0].first) in {11, 13} and sum(p.first for p in pair) == 0]
+    Z1pair = min(possibleZs, key=lambda x: abs(sum((p for id, p in x), ROOT.TLorentzVector()).M()-125))
+    l1p, l1m = Z1pair
+    Z2pair, = {(l2p, l2m) for l2p, l2m in possibleZs if l2p is not l1p and l2m is not l1m}
+    return Z1pair[0], Z1pair[1], Z2pair[0], Z2pair[1]
+  @methodtools.lru_cache()
+  @property
+  def Z1(self): return self.sortedleptons[:2]
+  @methodtools.lru_cache()
+  @property
+  def Z1p4(self): return sum((p for id, p in self.Z1), ROOT.TLorentzVector())
+  @methodtools.lru_cache()
+  @property
+  def Z2(self): return self.sortedleptons[2:]
+  @methodtools.lru_cache()
+  @property
+  def Z2p4(self): return sum((p for id, p in self.Z2), ROOT.TLorentzVector())
+  @methodtools.lru_cache()
+  @property
+  def Z1Mass(self): return self.Z1p4.M()
+  @property
+  def Z1Pt(self): return self.Z1p4.Pt()
+  @property
+  def Z1Flav(self): return np.product([id for id, p in self.Z1])
+  @methodtools.lru_cache()
+  @property
+  def Z2Mass(self): return self.Z2p4.M()
+  @property
+  def Z2Pt(self): return self.Z2p4.Pt()
+  @property
+  def Z2Flav(self): return np.product([id for id, p in self.Z2])
+  @methodtools.lru_cache()
+  @property
+  def decayangles(self):
+    angles = self.__reco.computeDecayAngles()
+    print(angles, self.Z1Mass, self.Z2Mass)
+    np.testing.assert_almost_equal(angles.qH, self.ZZMass, decimal=5)
+    np.testing.assert_almost_equal(angles.m1, self.Z1Mass, decimal=5)
+    np.testing.assert_almost_equal(angles.m2, self.Z2Mass, decimal=5)
+    return angles
+  @property
+  def costhetastar(self): return self.decayangles.costhetastar
+  @property
+  def helphi(self): return self.decayangles.Phi
+  @property
+  def helcosthetaZ1(self): return self.decayangles.costheta1
+  @property
+  def helcosthetaZ2(self): return self.decayangles.costheta2
+  @property
+  def phistarZ1(self): return self.decayangles.Phi1
 
   @classmethod
   def branches(cls):
@@ -87,7 +164,6 @@ class Event(object):
       "nCleanedJetsPt30",
       "trigWord",
       "evtPassMETFilter",
-    ] or [
       "ZZMass",
       "ZZsel",
       "ZZPt",
@@ -105,6 +181,7 @@ class Event(object):
       "helcosthetaZ1",
       "helcosthetaZ2",
       "phistarZ1",
+    ] or [
       "phistarZ2",
       "xi",
       "xistar",
