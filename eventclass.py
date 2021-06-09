@@ -36,7 +36,6 @@ class ProbabilityLine(object):
     self.maxnumerator = maxnumerator
     self.maxdenominator = maxdenominator
 
-
   @classmethod
   def kwargsfromline(cls, line, alllines):
     kwargs = {k.lower(): v for k, v in (_.split(":") for _ in line.split(" "))}
@@ -674,6 +673,7 @@ class Event(object):
       "LHEAssociatedParticleMass",
       "LHEAssociatedParticleId",
       "LHEPDFScale",
+      "pConst_GG_SIG_ghg2_1_ghz1_1_JHUGen",
       "p_GG_SIG_ghg2_1_ghz1_1_JHUGen",
       "p_GG_SIG_ghg2_1_ghz1prime2_1E4_JHUGen",
       "p_GG_SIG_ghg2_1_ghz2_1_JHUGen",
@@ -707,7 +707,6 @@ class Event(object):
       "p_GG_SIG_gXg5_1_gXz9_1_JHUGen",
       "p_GG_SIG_gXg5_1_gXz10_1_JHUGen",
     ] or [
-      "pConst_GG_SIG_ghg2_1_ghz1_1_JHUGen",
       "pAux_JVBF_SIG_ghv1_1_JHUGen_JECNominal",
       "p_JVBF_SIG_ghv1_1_JHUGen_JECNominal",
       "pConst_JQCD_SIG_ghg2_1_JHUGen_JECNominal",
@@ -1133,7 +1132,7 @@ class Event(object):
   def recoprobabilities(cls):
     from pyFragments.RecoProbabilities import theRecoProbabilities
     probs = [ProbabilityLine.fromline(line, theRecoProbabilities) for line in theRecoProbabilities]
-    probs = [prob for prob in probs if prob.name.startswith("GG_SIG") and "MCFM" not in prob.name]
+    probs = [prob for prob in probs if prob.name.startswith("GG_SIG")]
     return probs
 
   @property
@@ -1142,12 +1141,30 @@ class Event(object):
   def reco(self): return self.__reco
 
 for prob in Event.recoprobabilities():
-  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst):
+  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst, addpaux=prob.addpaux):
     reco = self.reco
     reco.setProcess(process, me, production)
     for k, v in couplings.items():
       setattr(reco, k, v)
-    return reco.computeP()
+    prob = reco.computeP()
+    pconst = reco.getConstant() if addpconst else None
+    paux = reco.getPAux() if addpaux else None
+    return prob, pconst, paux
 
-  f.__name__ = "p_"+prob.name
-  setattr(Event, f.__name__, property(f))
+  f.__name__ = prob.name
+  setattr(Event, f.__name__, methodtools.lru_cache()(property(f)))
+
+  def p(self, allname=f.__name__): return getattr(self, allname)[0]
+  p.__name__ = "p_"+prob.name
+  setattr(Event, p.__name__, methodtools.lru_cache()(property(p)))
+
+  if prob.addpconst:
+    def pconst(self, allname=f.__name__): return getattr(self, allname)[1]
+    pconst.__name__ = "pConst_"+prob.name
+    setattr(Event, pconst.__name__, methodtools.lru_cache()(property(pconst)))
+
+  if prob.addpaux:
+    def paux(self, allname=f.__name__): return getattr(self, allname)[2]
+    paux.__name__ = "pAux_"+prob.name
+    setattr(Event, paux.__name__, methodtools.lru_cache()(property(paux)))
+

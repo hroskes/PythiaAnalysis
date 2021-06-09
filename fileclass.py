@@ -274,6 +274,10 @@ class CJLHEFile(contextlib2.ExitStack):
     ]
     result += [
       NormalBranch("p_"+prob.name, float32) for prob in Event.recoprobabilities()
+    ] + [
+      NormalBranch("pConst_"+prob.name, float32) for prob in Event.recoprobabilities() if prob.addpconst
+    ] + [
+      NormalBranch("pAux_"+prob.name, float32) for prob in Event.recoprobabilities() if prob.addpaux
     ]
     return result
 
