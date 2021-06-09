@@ -132,7 +132,6 @@ class Event(object):
   @property
   def decayangles(self):
     angles = self.__reco.computeDecayAngles()
-    print(angles, self.Z1Mass, self.Z2Mass)
     np.testing.assert_almost_equal(angles.qH, self.ZZMass, decimal=5)
     np.testing.assert_almost_equal(angles.m1, self.Z1Mass, decimal=5)
     np.testing.assert_almost_equal(angles.m2, self.Z2Mass, decimal=5)
@@ -156,6 +155,18 @@ class Event(object):
     boosted = ROOT.TLorentzVector(self.Z1p4)
     boosted.Boost(-self.ZZp4.BoostVector())
     return boosted.Phi()
+  @property
+  def LepPt(self):
+    return [p.Pt() for id, p in self.sortedleptons]
+  @property
+  def LepEta(self):
+    return [p.Eta() for id, p in self.sortedleptons]
+  @property
+  def LepPhi(self):
+    return [p.Phi() for id, p in self.sortedleptons]
+  @property
+  def LepLepId(self):
+    return [id for id, p in self.sortedleptons]
 
   @classmethod
   def branches(cls):
@@ -193,11 +204,11 @@ class Event(object):
       "phistarZ2",
       "xi",
       "xistar",
-    ] or [
       "LepPt",
       "LepEta",
       "LepPhi",
       "LepLepId",
+    ] or [
       "JetPt",
       "JetEta",
       "JetPhi",

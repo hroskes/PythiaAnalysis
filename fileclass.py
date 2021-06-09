@@ -127,10 +127,11 @@ class NormalBranch(Branch):
     self.__array[0] = getattr(event, self.name)
     return self.__array[0]
 
-class JetVectorBranch(Branch):
+class VectorBranch(Branch):
   def __init__(self, name, typ):
+    import ROOT
     vectortyp = ROOT.vector(typ)
-    super(JetVectorBranch, self).__init__(name, vectortyp)
+    super(VectorBranch, self).__init__(name, vectortyp)
     self.__vector = vectortyp(0)
   @property
   def thingforsetbranchaddress(self): return self.__vector
@@ -196,6 +197,10 @@ class CJLHEFile(contextlib2.ExitStack):
       NormalBranch("phistarZ2", float32),
       NormalBranch("xi", float32),
       NormalBranch("xistar", float32),
+      VectorBranch("LepPt", float),
+      VectorBranch("LepEta", float),
+      VectorBranch("LepPhi", float),
+      VectorBranch("LepLepId", "short"),
     ]
 
   def __enter__(self):
