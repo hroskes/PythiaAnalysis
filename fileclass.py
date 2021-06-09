@@ -8,23 +8,13 @@ if __name__ == "__main__":
   p.add_argument("--overwrite", action="store_true")
   p.add_argument("--cjlstfolder", type=pathlib2.Path, default=pathlib2.Path("/work-zfs/lhc/GENtrees/210601_2018MC_photons"))
   args = p.parse_args()
+  del p
 
 thisfolder = pathlib2.Path(__file__).parent
 
-from eventclass import Event, LHEFile_Hwithdecay, LHEFile_Hwithdecay_smear
+from eventclass import Event, LHEFile_Hwithdecay, LHEFile_Hwithdecay_smear, NumpyImport
 
-class NumpyImport(object):
-  def __getattr__(self, attr):
-    global np
-    import numpy as np
-    return getattr(np, attr)
 np = NumpyImport()
-class TVarImport(object):
-  def __getattr__(self, attr):
-    global TVar
-    from JHUGenMELA.MELA.mela import TVar
-    return getattr(TVar, attr)
-TVar = TVarImport()
 
 
 def fspath(path):
@@ -160,14 +150,14 @@ class CJLHEFile(contextlib2.ExitStack):
     self.__branches = self.branches()
 
     branchnames = {branch.name for branch in self.__branches}
-    targetbranchnames = set(Event.branches())
+    targetbranchnames = set(Event.branches(cjlstprocess))
     assert branchnames == targetbranchnames, branchnames ^ targetbranchnames
     bad = {name for name in branchnames if not hasattr(Event, name)}
     assert not bad, bad
 
   def branches(self):
     float32 = np.float32
-    return [
+    result = [
       NormalBranch("RunNumber", int),
       NormalBranch("LumiNumber", int),
       NormalBranch("EventNumber", long),
@@ -283,6 +273,10 @@ class CJLHEFile(contextlib2.ExitStack):
       VectorBranch("LHEAssociatedParticleId", "short"),
       NormalBranch("LHEPDFScale", float32),
     ]
+    result += [
+      NormalBranch("p_"+prob.name, float32) for prob in Event.recoprobabilities()
+    ]
+    return result
 
   @property
   def cjlstfilename(self):

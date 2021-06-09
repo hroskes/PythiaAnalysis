@@ -8,6 +8,66 @@ class NumpyImport(object):
     return getattr(np, attr)
 np = NumpyImport()
 
+class TVarImport(object):
+  def __getattr__(self, attr):
+    global TVar
+    from JHUGenMELA.MELA.mela import TVar
+    return getattr(TVar, attr)
+TVar = TVarImport()
+
+class ProbabilityLine(object):
+  def __init__(self, name, production, process, matrixelement, alias=None, options={}, couplings={}, defaultme=None, cluster=None, forceincomingflavors=None, ispm4l=None, supermelasyst=None, ispmavjjtrue=None, ispmavjj=None):
+    self.name = name
+    self.alias = alias
+    self.production = production
+    self.process = process
+    self.matrixelement = matrixelement
+    self.options = options
+    self.couplings = couplings
+    self.defaultme = defaultme
+    self.cluster = cluster
+    self.forceincomingflavors = forceincomingflavors
+    self.ispm4l = ispm4l
+    self.supermelasyst = supermelasyst
+    self.ispmavjjtrue = ispmavjjtrue
+    self.ispmavjj = ispmavjj
+  @classmethod
+  def kwargsfromline(cls, line, alllines):
+    kwargs = {k.lower(): v for k, v in (_.split(":") for _ in line.split(" "))}
+    if "copy" in kwargs:
+      copyline, = {line for line in alllines if "Name:"+kwargs["copy"]+" " in line}
+      copykwargs = cls.kwargsfromline(copyline, alllines)
+      copykwargs.update(kwargs)
+      kwargs = copykwargs
+      del kwargs["copy"]
+
+    for thing in "production", "process", "matrixelement":
+      if isinstance(kwargs[thing], str):
+        kwargs[thing] = getattr(TVar, kwargs[thing])
+
+    for thing in "options", "couplings":
+      if thing in kwargs:
+        kwargs[thing] = {k: v for k, v in (_.split("=") for _ in kwargs[thing].split(";"))}
+
+    for name, val in kwargs.get("couplings", {}).items():
+      real, imag = val.split(",")
+      real = float(real)
+      imag = float(imag)
+      kwargs["couplings"][name] = real + imag*1j
+
+    if kwargs.get("alias", None) == "<Name>":
+      kwargs["alias"] = kwargs["name"]
+
+    if "defaultme" in kwargs:
+      kwargs["defaultme"] = float(kwargs["defaultme"])
+
+    return kwargs
+
+  @classmethod
+  def fromline(cls, line, alllines):
+    return cls(**cls.kwargsfromline(line, alllines))
+
+
 class LHEEvent_Hwithdecay_smear(LHEEvent):
   #smearing is not actually implemented yet
   @classmethod
@@ -480,8 +540,10 @@ class Event(object):
   @property
   def genBR(self): return self.__genBR
 
+  #p_GG_SIG_gXg1_1_gXz1_1_JHUGen = p_GG_SIG_gXg2_1_gXz2_1_JHUGen = p_GG_SIG_gXg3_1_gXz3_1_JHUGen = p_GG_SIG_gXg4_1_gXz4_1_JHUGen = p_GG_SIG_gXg1_1_gXz5_1_JHUGen = p_GG_SIG_gXg1_1_gXz1_1_gXz5_1_JHUGen = p_GG_SIG_gXg1_1_gXz6_1_JHUGen = p_GG_SIG_gXg1_1_gXz7_1_JHUGen = p_GG_SIG_gXg5_1_gXz8_1_JHUGen = p_GG_SIG_gXg5_1_gXz9_1_JHUGen = p_GG_SIG_gXg5_1_gXz10_1_JHUGen = -999
+
   @classmethod
-  def branches(cls):
+  def branches(cls, cjlstprocess):
     return [
       "RunNumber",
       "EventNumber",
@@ -597,8 +659,6 @@ class Event(object):
       "LHEAssociatedParticleMass",
       "LHEAssociatedParticleId",
       "LHEPDFScale",
-    ] or [
-      "pConst_GG_SIG_ghg2_1_ghz1_1_JHUGen",
       "p_GG_SIG_ghg2_1_ghz1_1_JHUGen",
       "p_GG_SIG_ghg2_1_ghz1prime2_1E4_JHUGen",
       "p_GG_SIG_ghg2_1_ghz2_1_JHUGen",
@@ -620,6 +680,19 @@ class Event(object):
       "p_GG_SIG_ghg2_1_ghz1_1_gha2_1_JHUGen",
       "p_GG_SIG_ghg2_1_ghz1_1_gha4_1_JHUGen",
       "p_GG_SIG_ghg2_1_ghz1prime2_1E4_ghza1prime2_1E4_JHUGen",
+      "p_GG_SIG_gXg1_1_gXz1_1_JHUGen",
+      "p_GG_SIG_gXg2_1_gXz2_1_JHUGen",
+      "p_GG_SIG_gXg3_1_gXz3_1_JHUGen",
+      "p_GG_SIG_gXg4_1_gXz4_1_JHUGen",
+      "p_GG_SIG_gXg1_1_gXz5_1_JHUGen",
+      "p_GG_SIG_gXg1_1_gXz1_1_gXz5_1_JHUGen",
+      "p_GG_SIG_gXg1_1_gXz6_1_JHUGen",
+      "p_GG_SIG_gXg1_1_gXz7_1_JHUGen",
+      "p_GG_SIG_gXg5_1_gXz8_1_JHUGen",
+      "p_GG_SIG_gXg5_1_gXz9_1_JHUGen",
+      "p_GG_SIG_gXg5_1_gXz10_1_JHUGen",
+    ] or [
+      "pConst_GG_SIG_ghg2_1_ghz1_1_JHUGen",
       "pAux_JVBF_SIG_ghv1_1_JHUGen_JECNominal",
       "p_JVBF_SIG_ghv1_1_JHUGen_JECNominal",
       "pConst_JQCD_SIG_ghg2_1_JHUGen_JECNominal",
@@ -828,17 +901,6 @@ class Event(object):
       "p_QQB_SIG_ZPqqLR_1_gZPz2_1_JHUGen",
       "p_INDEPENDENT_SIG_gZPz1_1_JHUGen",
       "p_INDEPENDENT_SIG_gZPz2_1_JHUGen",
-      "p_GG_SIG_gXg1_1_gXz1_1_JHUGen",
-      "p_GG_SIG_gXg2_1_gXz2_1_JHUGen",
-      "p_GG_SIG_gXg3_1_gXz3_1_JHUGen",
-      "p_GG_SIG_gXg4_1_gXz4_1_JHUGen",
-      "p_GG_SIG_gXg1_1_gXz5_1_JHUGen",
-      "p_GG_SIG_gXg1_1_gXz1_1_gXz5_1_JHUGen",
-      "p_GG_SIG_gXg1_1_gXz6_1_JHUGen",
-      "p_GG_SIG_gXg1_1_gXz7_1_JHUGen",
-      "p_GG_SIG_gXg5_1_gXz8_1_JHUGen",
-      "p_GG_SIG_gXg5_1_gXz9_1_JHUGen",
-      "p_GG_SIG_gXg5_1_gXz10_1_JHUGen",
       "p_QQB_SIG_XqqLR_1_gXz1_1_JHUGen",
       "p_QQB_SIG_XqqLR_1_gXz2_1_JHUGen",
       "p_QQB_SIG_XqqLR_1_gXz3_1_JHUGen",
@@ -1050,3 +1112,27 @@ class Event(object):
       "p_Gen_GG_SIG_ghg2_1_ghza4_1_gha4_1_JHUGen",
       "p_Gen_GG_SIG_ghg2_1_gha2_1_gha4_1_JHUGen",
     ]
+
+  @methodtools.lru_cache()
+  @classmethod
+  def recoprobabilities(cls):
+    from pyFragments.RecoProbabilities import theRecoProbabilities
+    probs = [ProbabilityLine.fromline(line, theRecoProbabilities) for line in theRecoProbabilities]
+    probs = [prob for prob in probs if prob.name.startswith("GG_SIG") and "MCFM" not in prob.name]
+    return probs
+
+  @property
+  def gen(self): return self.__gen
+  @property
+  def reco(self): return self.__reco
+
+for prob in Event.recoprobabilities():
+  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings):
+    reco = self.reco
+    reco.setProcess(process, me, production)
+    for k, v in couplings.items():
+      setattr(reco, k, v)
+    return reco.computeP()
+
+  f.__name__ = "p_"+prob.name
+  setattr(Event, f.__name__, property(f))

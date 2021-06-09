@@ -176,7 +176,7 @@ ALepsProdProbabilities_SpinZero_JHUGen = [
 
    # Leptonic WH (CAUTION: All requiring the SM ME to be maximized)
    "Name:LepWH_SIG_ghw1_1_JHUGen Alias:<Name> Process:HSMHiggs Production:Lep_WH MatrixElement:JHUGen Cluster:LepWH Options:MaxNumerator=LepWH_SIG_ghw1_1_JHUGen DefaultME:-1",
-   "Name:LepWH_SIG_ghw1prime2_1E4_JHUGen Alias:<Name> Process:SelfDefine_spin0 Production:Lep_WH MatrixElement:JHUGen Cluster:LepWH Options:MaxNumerator=LepWH_SIG_ghw1_1 Couplings:ghz1_prime2=10000,0_JHUGen DefaultME:-1",
+   "Name:LepWH_SIG_ghw1prime2_1E4_JHUGen Alias:<Name> Process:SelfDefine_spin0 Production:Lep_WH MatrixElement:JHUGen Cluster:LepWH Options:MaxNumerator=LepWH_SIG_ghw1_1 Couplings:ghz1_prime2=10000,0 DefaultME:-1",
    "Name:LepWH_SIG_ghw2_1_JHUGen Alias:<Name> Process:H0hplus Production:Lep_WH MatrixElement:JHUGen Cluster:LepWH Options:MaxNumerator=LepWH_SIG_ghw1_1_JHUGen DefaultME:-1",
    "Name:LepWH_SIG_ghw4_1_JHUGen Alias:<Name> Process:H0minus Production:Lep_WH MatrixElement:JHUGen Cluster:LepWH Options:MaxNumerator=LepWH_SIG_ghw1_1_JHUGen DefaultME:-1",
 
@@ -324,16 +324,3 @@ theRecoProbabilities.extend(PM4L_SUPERMELA)
 theRecoProbabilities.extend(PMAVJJ_SUPERDIJETMELA_JECNominal)
 theRecoProbabilities.extend(PMAVJJ_SUPERDIJETMELA_JECUp)
 theRecoProbabilities.extend(PMAVJJ_SUPERDIJETMELA_JECDn)
-
-# Append final list
-for name in (
-             "ZZCand",          "ZZTree",
-             "ZLLCand",         "CRZLLTree",
-             "ZZCandlooseEle",  "ZZTreelooseEle",
-             "ZLLCandlooseEle", "CRZLLTreelooseEle",
-             "ZLLCandZ1RSE",    "CRZLLTreeZ1RSE",
-             "ZZCandtle",       "ZZTreetle",
-             "ZLLCandtle",      "CRZLLTreetle",
-            ):
-    if hasattr(process, name):
-        getattr(process, name).recoProbabilities.extend(theRecoProbabilities)
