@@ -147,6 +147,15 @@ class Event(object):
   def helcosthetaZ2(self): return self.decayangles.costheta2
   @property
   def phistarZ1(self): return self.decayangles.Phi1
+  @property
+  def phistarZ2(self): return 0
+  @property
+  def xi(self): return self.ZZp4.Phi()
+  @property
+  def xistar(self):
+    boosted = ROOT.TLorentzVector(self.Z1p4)
+    boosted.Boost(-self.ZZp4.BoostVector())
+    return boosted.Phi()
 
   @classmethod
   def branches(cls):
@@ -181,10 +190,10 @@ class Event(object):
       "helcosthetaZ1",
       "helcosthetaZ2",
       "phistarZ1",
-    ] or [
       "phistarZ2",
       "xi",
       "xistar",
+    ] or [
       "LepPt",
       "LepEta",
       "LepPhi",

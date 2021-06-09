@@ -193,7 +193,9 @@ class CJLHEFile(contextlib2.ExitStack):
       NormalBranch("helcosthetaZ1", float32),
       NormalBranch("helcosthetaZ2", float32),
       NormalBranch("phistarZ1", float32),
-
+      NormalBranch("phistarZ2", float32),
+      NormalBranch("xi", float32),
+      NormalBranch("xistar", float32),
     ]
 
   def __enter__(self):
