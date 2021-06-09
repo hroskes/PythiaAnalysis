@@ -16,7 +16,6 @@ from eventclass import Event, LHEFile_Hwithdecay, LHEFile_Hwithdecay_smear, Nump
 
 np = NumpyImport()
 
-
 def fspath(path):
   if isinstance(path, str): return path
   return path.__fspath__()

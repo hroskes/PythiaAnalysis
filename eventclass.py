@@ -16,13 +16,12 @@ class TVarImport(object):
 TVar = TVarImport()
 
 class ProbabilityLine(object):
-  def __init__(self, name, production, process, matrixelement, alias=None, options={}, couplings={}, defaultme=None, cluster=None, forceincomingflavors=None, ispm4l=None, supermelasyst=None, ispmavjjtrue=None, ispmavjj=None):
+  def __init__(self, name, production, process, matrixelement, alias=None, couplings={}, defaultme=None, cluster=None, forceincomingflavors=None, ispm4l=None, supermelasyst=None, ispmavjjtrue=None, ispmavjj=None, addpconst=False, addpaux=False, subtractp=None, maxnumerator=None, maxdenominator=None):
     self.name = name
     self.alias = alias
     self.production = production
     self.process = process
     self.matrixelement = matrixelement
-    self.options = options
     self.couplings = couplings
     self.defaultme = defaultme
     self.cluster = cluster
@@ -31,6 +30,13 @@ class ProbabilityLine(object):
     self.supermelasyst = supermelasyst
     self.ispmavjjtrue = ispmavjjtrue
     self.ispmavjj = ispmavjj
+    self.addpconst = addpconst
+    self.addpaux = addpaux
+    self.subtractp = subtractp
+    self.maxnumerator = maxnumerator
+    self.maxdenominator = maxdenominator
+
+
   @classmethod
   def kwargsfromline(cls, line, alllines):
     kwargs = {k.lower(): v for k, v in (_.split(":") for _ in line.split(" "))}
@@ -49,6 +55,11 @@ class ProbabilityLine(object):
       if thing in kwargs:
         kwargs[thing] = {k: v for k, v in (_.split("=") for _ in kwargs[thing].split(";"))}
 
+    for name, val in kwargs.pop("options", {}).items():
+      name = name.lower()
+      assert name not in kwargs, name
+      kwargs[name] = val
+
     for name, val in kwargs.get("couplings", {}).items():
       real, imag = val.split(",")
       real = float(real)
@@ -60,6 +71,10 @@ class ProbabilityLine(object):
 
     if "defaultme" in kwargs:
       kwargs["defaultme"] = float(kwargs["defaultme"])
+
+    for thing in "addpaux", "addpconst":
+      if thing in kwargs:
+        kwargs[thing] = bool(int(kwargs[thing]))
 
     return kwargs
 
@@ -1127,7 +1142,7 @@ class Event(object):
   def reco(self): return self.__reco
 
 for prob in Event.recoprobabilities():
-  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings):
+  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst):
     reco = self.reco
     reco.setProcess(process, me, production)
     for k, v in couplings.items():
