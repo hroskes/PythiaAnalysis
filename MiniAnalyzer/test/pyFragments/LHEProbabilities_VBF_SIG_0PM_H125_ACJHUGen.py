@@ -208,7 +208,7 @@ for coupling in mycouplings:
 
 if hasphoton and not hasZZ:
   LHE_ProdProbabilities_SpinZero_JHUGen = [
-    _.replace("ghv", "ghz").replace("Couplings:g", "Couplings:separateWWZZcouplings=1;g").replace("ghw1=1,0", "")
+    _.replace("ghv", "ghz").replace("Couplings:g", "Couplings:separateWWZZcouplings=1;g").replace("ghw1=1,0", "").replace(";;", ";")
       for _ in LHE_ProdProbabilities_SpinZero_JHUGen
       if "ghw" not in _.replace("ghw1=1,0", "")
   ]
