@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import abc, argparse, contextlib2, csv, methodtools, more_itertools, pathlib2
 
 if __name__ == "__main__":
