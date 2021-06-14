@@ -46,8 +46,8 @@ class ProbabilityLine(object):
       kwargs = copykwargs
       del kwargs["copy"]
 
-    for thing in "production", "process", "matrixelement":
-      if isinstance(kwargs[thing], str):
+    for thing in "production", "process", "matrixelement", "supermelasyst":
+      if isinstance(kwargs.get(thing, None), str):
         kwargs[thing] = getattr(TVar, kwargs[thing])
 
     for thing in "options", "couplings":
@@ -71,7 +71,7 @@ class ProbabilityLine(object):
     if "defaultme" in kwargs:
       kwargs["defaultme"] = float(kwargs["defaultme"])
 
-    for thing in "addpaux", "addpconst":
+    for thing in "addpaux", "addpconst", "ispm4l":
       if thing in kwargs:
         kwargs[thing] = bool(int(kwargs[thing]))
 
@@ -706,7 +706,6 @@ class Event(object):
       "p_GG_SIG_gXg5_1_gXz8_1_JHUGen",
       "p_GG_SIG_gXg5_1_gXz9_1_JHUGen",
       "p_GG_SIG_gXg5_1_gXz10_1_JHUGen",
-    ] or [
       "pAux_JVBF_SIG_ghv1_1_JHUGen_JECNominal",
       "p_JVBF_SIG_ghv1_1_JHUGen_JECNominal",
       "pConst_JQCD_SIG_ghg2_1_JHUGen_JECNominal",
@@ -1071,6 +1070,7 @@ class Event(object):
       "p_JJVBF_SIG_ghv1_1_JHUGen_JECDn_BestDJJ",
       "pConst_JJQCD_SIG_ghg2_1_JHUGen_JECDn_BestDJJ",
       "p_JJQCD_SIG_ghg2_1_JHUGen_JECDn_BestDJJ",
+    ] or [
       "p_Gen_GG_SIG_ghg2_1_ghz1_1_JHUGen",
       "p_Gen_GG_SIG_ghg2_1_ghz1prime2_1E4_JHUGen",
       "p_Gen_GG_SIG_ghg2_1_ghz2_1_JHUGen",
@@ -1127,12 +1127,14 @@ class Event(object):
       "p_Gen_GG_SIG_ghg2_1_gha2_1_gha4_1_JHUGen",
     ]
 
+  p_GG_BSI_kappaTopBot_1_ghz1_i_MCFM = -999
+
   @methodtools.lru_cache()
   @classmethod
   def recoprobabilities(cls):
     from pyFragments.RecoProbabilities import theRecoProbabilities
     probs = [ProbabilityLine.fromline(line, theRecoProbabilities) for line in theRecoProbabilities]
-    probs = [prob for prob in probs if prob.name.startswith("GG_SIG")]
+    probs = [prob for prob in probs]
     return probs
 
   @property
@@ -1141,30 +1143,33 @@ class Event(object):
   def reco(self): return self.__reco
 
 for prob in Event.recoprobabilities():
-  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst, addpaux=prob.addpaux):
+  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst, addpaux=prob.addpaux, ispm4l=prob.ispm4l, supermelasyst=prob.supermelasyst):
     reco = self.reco
     reco.setProcess(process, me, production)
     for k, v in couplings.items():
       setattr(reco, k, v)
-    prob = reco.computeP()
+    if ispm4l:
+      prob = reco.computePM4l(supermelasyst)
+    else:
+      prob = reco.computeP()
     pconst = reco.getConstant() if addpconst else None
     paux = reco.getPAux() if addpaux else None
     return prob, pconst, paux
 
   f.__name__ = prob.name
-  setattr(Event, f.__name__, methodtools.lru_cache()(property(f)))
+  if not hasattr(Event, f.__name__): setattr(Event, f.__name__, methodtools.lru_cache()(property(f)))
 
   def p(self, allname=f.__name__): return getattr(self, allname)[0]
   p.__name__ = "p_"+prob.name
-  setattr(Event, p.__name__, methodtools.lru_cache()(property(p)))
+  if not hasattr(Event, p.__name__): setattr(Event, p.__name__, methodtools.lru_cache()(property(p)))
 
   if prob.addpconst:
     def pconst(self, allname=f.__name__): return getattr(self, allname)[1]
     pconst.__name__ = "pConst_"+prob.name
-    setattr(Event, pconst.__name__, methodtools.lru_cache()(property(pconst)))
+    if not hasattr(Event, pconst.__name__): setattr(Event, pconst.__name__, methodtools.lru_cache()(property(pconst)))
 
   if prob.addpaux:
     def paux(self, allname=f.__name__): return getattr(self, allname)[2]
     paux.__name__ = "pAux_"+prob.name
-    setattr(Event, paux.__name__, methodtools.lru_cache()(property(paux)))
+    if not hasattr(Event, paux.__name__): setattr(Event, paux.__name__, methodtools.lru_cache()(property(paux)))
 
