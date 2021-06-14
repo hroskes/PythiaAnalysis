@@ -1128,6 +1128,10 @@ class Event(object):
     ]
 
   p_GG_BSI_kappaTopBot_1_ghz1_i_MCFM = -999
+  p_ttHUndecayed_SIG_kappa_1_JHUGen_JECNominal = -999
+  p_ttHUndecayed_SIG_kappatilde_1_JHUGen_JECNominal = -999
+  p_ttHUndecayed_SIG_kappa_1_kappatilde_1_JHUGen = -999
+  p_bbH_SIG_kappa_1_JHUGen_JECNominal = -999
 
   @methodtools.lru_cache()
   @classmethod
@@ -1142,14 +1146,25 @@ class Event(object):
   @property
   def reco(self): return self.__reco
 
+_2jetproductions = {TVar.Had_WH, TVar.Had_ZH, TVar.JJVBF, TVar.JJEW, TVar.JJQCD, TVar.Had_WH_S, TVar.Had_ZH_S, TVar.JJVBF_S, TVar.JJEW_S, TVar.JJQCD_S, TVar.Had_WH_TU, TVar.Had_ZH_TU, TVar.JJVBF_TU, TVar.JJEW_TU, TVar.JJQCD_TU}
+_1jetproductions = {TVar.JQCD}
+_lepVHproductions = {TVar.Lep_WH, TVar.Lep_ZH, TVar.Lep_WH_S, TVar.Lep_ZH_S, TVar.Lep_WH_TU, TVar.Lep_ZH_TU}
+_prodproductions = _2jetproductions | _1jetproductions | _lepVHproductions | {TVar.GammaH, TVar.ttH, TVar.bbH}
 for prob in Event.recoprobabilities():
-  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst, addpaux=prob.addpaux, ispm4l=prob.ispm4l, supermelasyst=prob.supermelasyst):
+  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst, addpaux=prob.addpaux, ispm4l=prob.ispm4l, supermelasyst=prob.supermelasyst, isprod=prob.production in _prodproductions and prob.matrixelement != TVar.MCFM, isproddec=prob.production in _prodproductions and prob.matrixelement == TVar.MCFM, need2associated="J2JEC" in str(prob.cluster), need1associated="J1JEC" in str(prob.cluster), islepVH=prob.cluster in ("LepZH", "LepWH")):
     reco = self.reco
+    if islepVH: return -999, -999, -999
+    if need2associated and len(reco.associated) < 2: return -999, -999, -999
+    if need1associated and len(reco.associated) != 1: return -999, -999, -999
     reco.setProcess(process, me, production)
     for k, v in couplings.items():
       setattr(reco, k, v)
     if ispm4l:
       prob = reco.computePM4l(supermelasyst)
+    elif isproddec:
+      prob = reco.computeProdDecP()
+    elif isprod:
+      prob = reco.computeProdP()
     else:
       prob = reco.computeP()
     pconst = reco.getConstant() if addpconst else None
