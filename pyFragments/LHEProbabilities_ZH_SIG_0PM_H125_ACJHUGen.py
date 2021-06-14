@@ -191,19 +191,3 @@ theLHEProbabilities = []
 theLHEProbabilities.extend(LHE_DecayProbabilities_SpinZero_JHUGen)
 theLHEProbabilities.extend(LHE_ProdProbabilities_SpinZero_JHUGen)
 
-# Append final list
-for name in (
-             "ZZTree",
-             "CRZLLTree",
-             "ZZTreelooseEle",
-             "CRZLLTreelooseEle",
-             "CRZLLTreeZ1RSE",
-             "ZZTreetle",
-             "CRZLLTreetle",
-            ):
-    if hasattr(process, name):
-        tree = getattr(process, name)
-        #turn on failedTree keeping the most relevant information
-        tree.lheProbabilities.extend(theLHEProbabilities)
-#        if name == "ZZTree" and tree.skipEmptyEvents:
-#            tree.failedTreeLevel = max(tree.failedTreeLevel.value(), LHEFailedTree)

@@ -206,7 +206,6 @@ class CJLHEFile(contextlib2.ExitStack):
       NormalBranch("genFinalState", int),
       NormalBranch("trigEffWeight", float32),
       NormalBranch("dataMCWeight", float32),
-      NormalBranch("KFactor_QCD_ggZZ_Nominal", float32),
       NormalBranch("genHEPMCweight_NNLO", float32),
       NormalBranch("HqTMCweight", float32),
       NormalBranch("ZXFakeweight", float32),
@@ -269,6 +268,10 @@ class CJLHEFile(contextlib2.ExitStack):
       VectorBranch("LHEAssociatedParticleId", "short"),
       NormalBranch("LHEPDFScale", float32),
     ]
+    if self.cjlstprocess.startswith("ggH"):
+      result += [
+        NormalBranch("KFactor_QCD_ggZZ_Nominal", float32),
+      ]
     result += [
       NormalBranch("p_"+prob.name, float32) for prob in self.eventclass.recoprobabilities()
     ] + [
