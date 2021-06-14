@@ -1390,6 +1390,15 @@ class Event(object):
       "p_Gen_VBF_SIG_ghza4_1_gha4_1_JHUGen",
       "p_Gen_VBF_SIG_gha2_1_gha4_1_JHUGen",
     ]
+    if cjlstprocess.startswith("HJJ"): result += [
+      "p_Gen_HJJ_SIG_ghg2_1_JHUGen",
+      "p_Gen_HJJ_SIG_ghg2_1_ghg4_1_JHUGen",
+      "p_Gen_HJJ_SIG_ghg4_1_JHUGen",
+      "p_Gen_HJJ_SIG_ghg2_1_ghg4_i_JHUGen",
+      "p_Gen_JJQCD_InitialQQ_SIG_ghg2_1_JHUGen_JECNominal",
+      "p_Gen_JJQCD_InitialQQ_SIG_ghg4_1_JHUGen_JECNominal",
+      "p_Gen_JJQCD_InitialQQ_SIG_ghg2_1_ghg4_1_JHUGen_JECNominal",
+    ]
     return result
 
   p_GG_BSI_kappaTopBot_1_ghz1_i_MCFM = -999
@@ -1405,6 +1414,10 @@ class Event(object):
   p_ttHUndecayed_SIG_kappatilde_1_JHUGen_JECDn = -999
   p_ttHUndecayed_SIG_kappa_1_kappatilde_1_JHUGen_JECDn = -999
   p_bbH_SIG_kappa_1_JHUGen_JECDn = -999
+
+  p_Gen_JJQCD_InitialQQ_SIG_ghg2_1_JHUGen_JECNominal = -999
+  p_Gen_JJQCD_InitialQQ_SIG_ghg4_1_JHUGen_JECNominal = -999
+  p_Gen_JJQCD_InitialQQ_SIG_ghg2_1_ghg4_1_JHUGen_JECNominal = -999
 
   @methodtools.lru_cache()
   @classmethod
