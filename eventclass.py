@@ -1,4 +1,4 @@
-import contextlib, itertools, methodtools, more_itertools, ROOT
+import contextlib, csv, itertools, methodtools, more_itertools, pathlib2, ROOT
 from JHUGenMELA.MELA.lhefile import LHEEvent, LHEFileBase, LHEFile_Hwithdecay
 
 class NumpyImport(object):
@@ -15,8 +15,14 @@ class TVarImport(object):
     return getattr(TVar, attr)
 TVar = TVarImport()
 
+def fspath(path):
+  if isinstance(path, str): return path
+  return path.__fspath__()
+
+thisfolder = pathlib2.Path(__file__).parent
+
 class ProbabilityLine(object):
-  def __init__(self, name, production, process, matrixelement, alias=None, couplings={}, defaultme=None, cluster=None, forceincomingflavors=None, ispm4l=None, supermelasyst=None, ispmavjjtrue=None, ispmavjj=None, addpconst=False, addpaux=False, subtractp=None, maxnumerator=None, maxdenominator=None):
+  def __init__(self, name, production, process, matrixelement, alias=None, couplings={}, defaultme=None, cluster=None, forceincomingflavors=None, ispm4l=None, supermelasyst=None, ispmavjjtrue=None, ispmavjj=None, addpconst=False, addpaux=False, subtractp=None, maxnumerator=None, maxdenominator=None, isgen=None, nobranch=None, dividep=None):
     self.name = name
     self.alias = alias
     self.production = production
@@ -35,6 +41,9 @@ class ProbabilityLine(object):
     self.subtractp = subtractp
     self.maxnumerator = maxnumerator
     self.maxdenominator = maxdenominator
+    self.isgen = isgen
+    self.nobranch = nobranch
+    self.dividep = dividep
 
   @classmethod
   def kwargsfromline(cls, line, alllines):
@@ -71,7 +80,7 @@ class ProbabilityLine(object):
     if "defaultme" in kwargs:
       kwargs["defaultme"] = float(kwargs["defaultme"])
 
-    for thing in "addpaux", "addpconst", "ispm4l":
+    for thing in "addpaux", "addpconst", "ispm4l", "isgen", "nobranch":
       if thing in kwargs:
         kwargs[thing] = bool(int(kwargs[thing]))
 
@@ -1070,7 +1079,6 @@ class Event(object):
       "p_JJVBF_SIG_ghv1_1_JHUGen_JECDn_BestDJJ",
       "pConst_JJQCD_SIG_ghg2_1_JHUGen_JECDn_BestDJJ",
       "p_JJQCD_SIG_ghg2_1_JHUGen_JECDn_BestDJJ",
-    ] or [
       "p_Gen_GG_SIG_ghg2_1_ghz1_1_JHUGen",
       "p_Gen_GG_SIG_ghg2_1_ghz1prime2_1E4_JHUGen",
       "p_Gen_GG_SIG_ghg2_1_ghz2_1_JHUGen",
@@ -1188,3 +1196,46 @@ for prob in Event.recoprobabilities():
     paux.__name__ = "pAux_"+prob.name
     if not hasattr(Event, paux.__name__): setattr(Event, paux.__name__, methodtools.lru_cache()(property(paux)))
 
+@methodtools.lru_cache()
+def CJLSTrow(cjlstprocess):
+  with open(fspath(thisfolder/"samples_2018_MC.csv")) as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+      if row["identifier"].strip() == cjlstprocess:
+        return row
+    else:
+      assert False, cjlstprocess
+
+@methodtools.lru_cache()
+def eventsubclass(cjlstprocess):
+  class EventSubClass(Event):
+    @methodtools.lru_cache()
+    @classmethod
+    def genprobabilities(cls):
+      fragment = CJLSTrow(cjlstprocess)["::pyFragments"].split(";")[1].replace(".py", "")
+      theLHEProbabilities = __import__("pyFragments."+fragment, fromlist="theLHEProbabilities").theLHEProbabilities
+      probs = [ProbabilityLine.fromline(line, theLHEProbabilities) for line in theLHEProbabilities]
+      probs = [prob for prob in probs]
+      return probs
+
+  for prob in EventSubClass.genprobabilities():
+    def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, isprod=prob.production in _prodproductions and prob.matrixelement != TVar.MCFM, isproddec=prob.production in _prodproductions and prob.matrixelement == TVar.MCFM, dividep=prob.dividep):
+      gen = self.gen
+      gen.setProcess(process, me, production)
+      for k, v in couplings.items():
+        setattr(gen, k, v)
+      if isproddec:
+        prob = gen.computeProdDecP()
+      elif isprod:
+        prob = gen.computeProdP()
+      else:
+        prob = gen.computeP()
+      if dividep is not None:
+        prob /= getattr(self, "p_Gen_"+dividep)
+      return prob
+
+    f.__name__ = "p_Gen_"+prob.name
+    if not hasattr(Event, f.__name__): setattr(Event, f.__name__, methodtools.lru_cache()(property(f)))
+
+  EventSubClass.__name__ = "Event"+cjlstprocess
+  return EventSubClass

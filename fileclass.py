@@ -12,13 +12,9 @@ if __name__ == "__main__":
 
 thisfolder = pathlib2.Path(__file__).parent
 
-from eventclass import Event, LHEFile_Hwithdecay, LHEFile_Hwithdecay_smear, NumpyImport
+from eventclass import CJLSTrow, eventsubclass, fspath, LHEFile_Hwithdecay, LHEFile_Hwithdecay_smear, NumpyImport
 
 np = NumpyImport()
-
-def fspath(path):
-  if isinstance(path, str): return path
-  return path.__fspath__()
 
 class TFile(object):
   def __init__(self, filename, *args, **kwargs):
@@ -145,13 +141,14 @@ class CJLHEFile(contextlib2.ExitStack):
         outfilename.unlink()
       except OSError:
         pass
+    self.eventclass = eventsubclass(cjlstprocess)
 
     self.__branches = self.branches()
 
     branchnames = {branch.name for branch in self.__branches}
-    targetbranchnames = set(Event.branches(cjlstprocess))
+    targetbranchnames = set(self.eventclass.branches(cjlstprocess))
     assert branchnames == targetbranchnames, branchnames ^ targetbranchnames
-    bad = {name for name in branchnames if not hasattr(Event, name)}
+    bad = {name for name in branchnames if not hasattr(self.eventclass, name)}
     assert not bad, bad
 
   def branches(self):
@@ -273,11 +270,14 @@ class CJLHEFile(contextlib2.ExitStack):
       NormalBranch("LHEPDFScale", float32),
     ]
     result += [
-      NormalBranch("p_"+prob.name, float32) for prob in Event.recoprobabilities()
+      NormalBranch("p_"+prob.name, float32) for prob in self.eventclass.recoprobabilities()
     ] + [
-      NormalBranch("pConst_"+prob.name, float32) for prob in Event.recoprobabilities() if prob.addpconst
+      NormalBranch("pConst_"+prob.name, float32) for prob in self.eventclass.recoprobabilities() if prob.addpconst
     ] + [
-      NormalBranch("pAux_"+prob.name, float32) for prob in Event.recoprobabilities() if prob.addpaux
+      NormalBranch("pAux_"+prob.name, float32) for prob in self.eventclass.recoprobabilities() if prob.addpaux
+    ]
+    result += [
+      NormalBranch("p_Gen_"+prob.name, float32) for prob in self.eventclass.genprobabilities() if not prob.nobranch
     ]
     return result
 
@@ -310,19 +310,13 @@ class CJLHEFile(contextlib2.ExitStack):
   @methodtools.lru_cache()
   @property
   def xsecs(self):
-    with open(fspath(thisfolder/"samples_2018_MC.csv")) as f:
-      reader = csv.DictReader(f)
-      for row in reader:
-        if row["identifier"].strip() == self.cjlstprocess:
-          break
-      else:
-        assert False, self.cjlstprocess
+    row = CJLSTrow(self.cjlstprocess)
+    xsec = float(row["crossSection=-1"])*float(row["BR=1"])
+    variables = {k: v for k, v in (_.split("=") for _ in row["::variables"].split(";"))}
+    genxsec = variables["GENXSEC"]
+    genBR = variables["GENBR"]
+    return xsec, genxsec, genBR
 
-      xsec = float(row["crossSection=-1"])*float(row["BR=1"])
-      variables = {k: v for k, v in (_.split("=") for _ in row["::variables"].split(";"))}
-      genxsec = variables["GENXSEC"]
-      genBR = variables["GENBR"]
-      return xsec, genxsec, genBR
   @methodtools.lru_cache()
   @property
   def xsec(self): return self.xsecs[0]
@@ -336,7 +330,7 @@ class CJLHEFile(contextlib2.ExitStack):
 
   def __iter__(self):
     for i, (gen, reco) in enumerate(more_itertools.more.zip_longest(self.__gen, self.__reco)):
-      yield Event(i=i, gen=gen, reco=reco, xsec=self.xsec, genxsec=self.genxsec, genBR=self.genBR)
+      yield self.eventclass(i=i, gen=gen, reco=reco, xsec=self.xsec, genxsec=self.genxsec, genBR=self.genBR)
 
   def run(self):
     with self:
