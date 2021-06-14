@@ -69,10 +69,14 @@ class ProbabilityLine(object):
       kwargs[name] = val
 
     for name, val in kwargs.get("couplings", {}).items():
-      real, imag = val.split(",")
-      real = float(real)
-      imag = float(imag)
-      kwargs["couplings"][name] = real + imag*1j
+      if name == "separateWWZZcouplings":
+        del kwargs["couplings"][name]
+        kwargs["couplings"]["differentiate_HWW_HZZ"] = bool(int(val))
+      else:
+        real, imag = val.split(",")
+        real = float(real)
+        imag = float(imag)
+        kwargs["couplings"][name] = real + imag*1j
 
     if kwargs.get("alias", None) == "<Name>":
       kwargs["alias"] = kwargs["name"]
