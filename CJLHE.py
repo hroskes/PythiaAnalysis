@@ -344,7 +344,7 @@ class CJLHEFile(contextlib2.ExitStack):
           branch.setbranchvalue(event)
         self.__t.Fill()
 
-        if (i+1)%10000 == 0 or (i+1) == self.__nentries:
+        if (i+1)%100 == 0 or (i+1) == self.__nentries:
           print i+1, "/", self.__nentries
           for branch in self.__branches:
             assert getattr(self.__t, branch.name) == branch.lastsetbranchvalue, (branch.name, getattr(self.__t, branch.name), branch.lastsetbranchvalue)
