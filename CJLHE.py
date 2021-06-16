@@ -288,7 +288,8 @@ class CJLHEFile(contextlib2.ExitStack):
 
   @property
   def cjlstfilename(self):
-    return self.cjlstfolder/self.cjlstprocess/"ZZ4lAnalysis.root"
+    cjlstprocess = self.cjlstprocess.replace("0MZgfdec05", "0L1Zgf05")
+    return self.cjlstfolder/cjlstprocess/"ZZ4lAnalysis.root"
 
   def __enter__(self):
     super(CJLHEFile, self).__enter__()
