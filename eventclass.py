@@ -22,7 +22,7 @@ def fspath(path):
 thisfolder = pathlib2.Path(__file__).parent
 
 class ProbabilityLine(object):
-  def __init__(self, name, production, process, matrixelement, alias=None, couplings={}, defaultme=None, cluster=None, forceincomingflavors=None, ispm4l=None, supermelasyst=None, ispmavjjtrue=None, ispmavjj=None, addpconst=False, addpaux=False, subtractp=None, maxnumerator=None, maxdenominator=None, isgen=None, nobranch=None, dividep=None):
+  def __init__(self, name, production, process, matrixelement, alias=None, couplings={}, defaultme=None, cluster=None, forceincomingflavors=None, ispm4l=None, supermelasyst=None, ispmavjjtrue=None, ispmavjj=None, addpconst=False, addpaux=False, subtractp=[], maxnumerator=None, maxdenominator=None, isgen=None, nobranch=None, dividep=None):
     self.name = name
     self.alias = alias
     self.production = production
@@ -87,6 +87,10 @@ class ProbabilityLine(object):
     for thing in "addpaux", "addpconst", "ispm4l", "isgen", "nobranch":
       if thing in kwargs:
         kwargs[thing] = bool(int(kwargs[thing]))
+
+    for thing in "subtractp",:
+      if thing in kwargs:
+        kwargs[thing] = ["p_"+_ for _ in kwargs[thing].split(",")]
 
     return kwargs
 
@@ -1437,7 +1441,7 @@ _1jetproductions = {TVar.JQCD}
 _lepVHproductions = {TVar.Lep_WH, TVar.Lep_ZH, TVar.Lep_WH_S, TVar.Lep_ZH_S, TVar.Lep_WH_TU, TVar.Lep_ZH_TU}
 _prodproductions = _2jetproductions | _1jetproductions | _lepVHproductions | {TVar.GammaH, TVar.ttH, TVar.bbH}
 for prob in Event.recoprobabilities():
-  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst, addpaux=prob.addpaux, ispm4l=prob.ispm4l, supermelasyst=prob.supermelasyst, isprod=prob.production in _prodproductions and prob.matrixelement != TVar.MCFM, isproddec=prob.production in _prodproductions and prob.matrixelement == TVar.MCFM, need2associated="J2JEC" in str(prob.cluster), need1associated="J1JEC" in str(prob.cluster), islepVH=prob.cluster in ("LepZH", "LepWH")):
+  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst, addpaux=prob.addpaux, ispm4l=prob.ispm4l, supermelasyst=prob.supermelasyst, isprod=prob.production in _prodproductions and prob.matrixelement != TVar.MCFM, isproddec=prob.production in _prodproductions and prob.matrixelement == TVar.MCFM, need2associated="J2JEC" in str(prob.cluster), need1associated="J1JEC" in str(prob.cluster), islepVH=prob.cluster in ("LepZH", "LepWH"), subtractp=prob.subtractp):
     reco = self.reco
     if islepVH: return -999, -999, -999
     if need2associated and len(reco.associated) < 2: return -999, -999, -999
@@ -1453,6 +1457,8 @@ for prob in Event.recoprobabilities():
       prob = reco.computeProdP()
     else:
       prob = reco.computeP()
+    for name in subtractp:
+      prob -= getattr(self, name)
     pconst = reco.getConstant() if addpconst else None
     paux = reco.getPAux() if addpaux else None
     return prob, pconst, paux
