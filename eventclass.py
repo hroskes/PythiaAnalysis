@@ -149,24 +149,31 @@ class LHEEvent_reco(LHEEvent):
       if status == -1:
         mothers.append(line)
       elif status == 1 and (0 <= abs(id) <= 6 or 11 <= abs(id) <= 16 or abs(id) in (21, 22)):
-        if abs(id) in (11, 13, 15):
+        if abs(id) in (11, 13):
           leptons[id/abs(id)].append(line)
         elif abs(id) in (1, 2, 3, 4, 5, 6, 22):
           associated.append(line)
-        elif abs(id) in (12, 14, 16):
+        elif abs(id) in (12, 14, 15, 16):
           pass
         else:
           assert False, id
 
-    if len(leptons[1]) < 2 or len(leptons[-1]) < 2:
-      daughters = []
-    elif len(leptons[1]) == 2 == len(leptons[-1]):
+    for i in leptons:
+      leptons[i] = [mela.SimpleParticle_t(_) for _ in leptons[i]]
+
+    if len(leptons[1]) < 2 or len(leptons[-1]) < 2 or len(leptons[1]) == 2 == len(leptons[-1]):
       daughters = leptons[1] + leptons[-1]
     else:
-      momenta = {lep: mela.SimpleParticle_t(lep)[1] for lep in leptons[1] + leptons[-1]}
       combinations = [[lep1, lep2, lep3, lep4] for (lep1, lep3), (lep2, lep4) in itertools.product(itertools.combinations(leptons[1], 2), itertools.combinations(leptons[-1], 2))]
-      daughters = min(combinations, key=lambda x: abs(sum((momenta[lep] for lep in x), ROOT.TLorentzVector()).M()-125))
+      daughters = min(combinations, key=lambda x: abs(sum((lep[1] for lep in x), ROOT.TLorentzVector()).M()-125))
       associated += [_ for _ in leptons[1]+leptons[-1] if _ not in daughters]
+
+    if len(daughters) == 4:
+      possibleZs = [sorted(pair, key=lambda x: x[0]) for pair in itertools.combinations(daughters, 2) if abs(pair[0][0]) in {11, 13} and sum(p[0] for p in pair) == 0]
+      Z1pair = min(possibleZs, key=lambda x: abs(sum((p for id, p in x), ROOT.TLorentzVector()).M()-91.2))
+      l1p, l1m = Z1pair
+      Z2pair, = {(l2p, l2m) for l2p, l2m in possibleZs if l2p is not l1p and l2m is not l1m}
+      daughters = [Z1pair[0], Z1pair[1], Z2pair[0], Z2pair[1]]
 
     if not isgen: mothers = None
     return daughters, associated, mothers
@@ -206,7 +213,9 @@ class Event(object):
   @property
   def NTrueInt(self): return 0
   @property
-  def PFMET(self): return -sum((p for id, p in self.__reco.finalstateparticles), ROOT.TLorentzVector()).Pt()
+  def PFMET(self):
+    return -999 #below line doesn't work because we ignore taus
+    return -sum((p for id, p in self.__reco.finalstateparticles), ROOT.TLorentzVector()).Pt()
   @methodtools.lru_cache()
   @property
   def nCleanedJets(self): return sum(1 for id, p in self.__reco.finalstateparticles if abs(id) == 0)
@@ -235,11 +244,7 @@ class Event(object):
   @methodtools.lru_cache()
   @property
   def sortedleptons(self):
-    possibleZs = [sorted(pair, key=lambda x: x[0]) for pair in itertools.combinations(self.__reco.daughters, 2) if abs(pair[0][0]) in {11, 13} and sum(p[0] for p in pair) == 0]
-    Z1pair = min(possibleZs, key=lambda x: abs(sum((p for id, p in x), ROOT.TLorentzVector()).M()-125))
-    l1p, l1m = Z1pair
-    Z2pair, = {(l2p, l2m) for l2p, l2m in possibleZs if l2p is not l1p and l2m is not l1m}
-    return Z1pair[0], Z1pair[1], Z2pair[0], Z2pair[1]
+    return self.__reco.daughters
   @methodtools.lru_cache()
   @property
   def Z1(self): return self.sortedleptons[:2]

@@ -288,7 +288,7 @@ class CJLHEFile(contextlib2.ExitStack):
 
   @property
   def cjlstfilename(self):
-    cjlstprocess = self.cjlstprocess.replace("0MZgfdec05", "0L1Zgf05")
+    cjlstprocess = self.cjlstprocess.replace("0MZgfdec05", "0Mf05")
     return self.cjlstfolder/cjlstprocess/"ZZ4lAnalysis.root"
 
   def __enter__(self):
@@ -341,9 +341,10 @@ class CJLHEFile(contextlib2.ExitStack):
   def run(self):
     with self:
       for i, event in enumerate(self):
-        for branch in self.__branches:
-          branch.setbranchvalue(event)
-        self.__t.Fill()
+        if len(event.reco.daughters) >= 4:
+          for branch in self.__branches:
+            branch.setbranchvalue(event)
+          self.__t.Fill()
 
         if (i+1)%100 == 0 or (i+1) == self.__nentries:
           print i+1, "/", self.__nentries
