@@ -135,7 +135,7 @@ class LHEEvent_reco(LHEEvent):
   @classmethod
   def extracteventparticles(cls, lines, isgen):
     assert not isgen
-    daughters, mothers, associated, leptons = [], [], [], {1: [], -1: []}
+    daughters, mothers, associated, leptons, taus = [], [], [], {1: [], -1: []}, []
     ids = [None]
     mother1s = [None]
     mother2s = [None]
@@ -153,8 +153,10 @@ class LHEEvent_reco(LHEEvent):
           leptons[id/abs(id)].append(line)
         elif abs(id) in (1, 2, 3, 4, 5, 6, 22):
           associated.append(line)
-        elif abs(id) in (12, 14, 15, 16):
+        elif abs(id) in (12, 14, 16):
           pass
+        elif abs(id) == 15:
+          taus.append(line)
         else:
           assert False, id
 
@@ -174,6 +176,8 @@ class LHEEvent_reco(LHEEvent):
       l1p, l1m = Z1pair
       Z2pair, = {(l2p, l2m) for l2p, l2m in possibleZs if l2p is not l1p and l2m is not l1m}
       daughters = [Z1pair[0], Z1pair[1], Z2pair[0], Z2pair[1]]
+
+    if not daughters: daughters = taus[:2] #silence TUtil::ConvertVectorFormat warning
 
     if not isgen: mothers = None
     return daughters, associated, mothers

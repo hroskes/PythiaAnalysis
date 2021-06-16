@@ -9,6 +9,8 @@ if __name__ == "__main__":
   p.add_argument("--outfilename", type=pathlib2.Path, required=True)
   p.add_argument("--overwrite", action="store_true")
   p.add_argument("--cjlstfolder", type=pathlib2.Path, default=pathlib2.Path("/work-zfs/lhc/GENtrees/210601_2018MC_photons"))
+  p.add_argument("--firstevent", type=int, default=1)
+  p.add_argument("--lastevent", type=int, default=float("inf"))
   args = p.parse_args()
   del p
 
@@ -132,7 +134,7 @@ class VectorBranch(Branch):
     return self.__vector
 
 class CJLHEFile(contextlib2.ExitStack):
-  def __init__(self, lhefilename, cjlstfolder, cjlstprocess, outfilename, overwrite=False):
+  def __init__(self, lhefilename, cjlstfolder, cjlstprocess, outfilename, overwrite=False, firstevent=1, lastevent=float("inf")):
     super(CJLHEFile, self).__init__()
     self.__lhefilename = lhefilename
     self.cjlstfolder = cjlstfolder
@@ -144,6 +146,8 @@ class CJLHEFile(contextlib2.ExitStack):
       except OSError:
         pass
     self.eventclass = eventsubclass(cjlstprocess)
+    self.firstevent = firstevent
+    self.lastevent = lastevent
 
     self.__branches = self.branches()
 
@@ -310,6 +314,8 @@ class CJLHEFile(contextlib2.ExitStack):
       for line in f:
         if line.strip() == "<event>":
           self.__nentries += 1
+    self.__nentries = min(self.__nentries, self.lastevent)
+    self.__nentries -= self.firstevent-1
 
     return self
 
@@ -335,19 +341,21 @@ class CJLHEFile(contextlib2.ExitStack):
       
 
   def __iter__(self):
-    for i, (gen, reco) in enumerate(more_itertools.more.zip_longest(self.__gen, self.__reco)):
+    for i, (gen, reco) in enumerate(more_itertools.more.zip_longest(self.__gen, self.__reco), start=1):
+      if i < self.firstevent: continue
+      if i > self.lastevent: break
       yield self.eventclass(i=i, gen=gen, reco=reco, xsec=self.xsec, genxsec=self.genxsec, genBR=self.genBR)
 
   def run(self):
     with self:
-      for i, event in enumerate(self):
+      for i, event in enumerate(self, start=1):
         if len(event.reco.daughters) >= 4:
           for branch in self.__branches:
             branch.setbranchvalue(event)
           self.__t.Fill()
 
-        if (i+1)%100 == 0 or (i+1) == self.__nentries:
-          print i+1, "/", self.__nentries
+        if i%100 == 0 or i == self.__nentries:
+          print i, "/", self.__nentries
           for branch in self.__branches:
             assert getattr(self.__t, branch.name) == branch.lastsetbranchvalue, (branch.name, getattr(self.__t, branch.name), branch.lastsetbranchvalue)
 
