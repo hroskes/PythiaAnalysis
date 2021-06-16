@@ -1,4 +1,5 @@
 import contextlib, csv, itertools, methodtools, more_itertools, pathlib2, ROOT
+from JHUGenMELA.MELA import mela
 from JHUGenMELA.MELA.lhefile import LHEEvent, LHEFileBase, LHEFile_Hwithdecay
 
 class NumpyImport(object):
@@ -98,12 +99,10 @@ class ProbabilityLine(object):
   def fromline(cls, line, alllines):
     return cls(**cls.kwargsfromline(line, alllines))
 
-
-class LHEEvent_Hwithdecay_smear(LHEEvent):
-  #smearing is not actually implemented yet
+class LHEEvent_gen(LHEEvent):
   @classmethod
   def extracteventparticles(cls, lines, isgen):
-    assert not isgen
+    assert isgen
     daughters, mothers, associated = [], [], []
     ids = [None]
     mother1s = [None]
@@ -131,11 +130,55 @@ class LHEEvent_Hwithdecay_smear(LHEEvent):
     if not isgen: mothers = None
     return daughters, associated, mothers
 
-class LHEFile_Hwithdecay_smear(LHEFileBase):
-  lheeventclass = LHEEvent_Hwithdecay_smear
+class LHEEvent_reco(LHEEvent):
+  #smearing is not actually implemented yet
+  @classmethod
+  def extracteventparticles(cls, lines, isgen):
+    assert not isgen
+    daughters, mothers, associated, leptons = [], [], [], {1: [], -1: []}
+    ids = [None]
+    mother1s = [None]
+    mother2s = [None]
+    for line in lines:
+      id, status, mother1, mother2 = (int(_) for _ in line.split()[0:4])
+      ids.append(id)
+      if (1 <= abs(id) <= 6 or abs(id) == 21) and not isgen:
+        line = line.replace(str(id), "0", 1)  #replace the first instance of the jet id with 0, which means unknown jet
+      mother1s.append(mother1)
+      mother2s.append(mother2)
+      if status == -1:
+        mothers.append(line)
+      elif status == 1 and (0 <= abs(id) <= 6 or 11 <= abs(id) <= 16 or abs(id) in (21, 22)):
+        if abs(id) in (11, 13, 15):
+          leptons[id/abs(id)].append(line)
+        elif abs(id) in (1, 2, 3, 4, 5, 6, 22):
+          associated.append(line)
+        elif abs(id) in (12, 14, 16):
+          pass
+        else:
+          assert False, id
+
+    if len(leptons[1]) < 2 or len(leptons[-1]) < 2:
+      daughters = []
+    elif len(leptons[1]) == 2 == len(leptons[-1]):
+      daughters = leptons[1] + leptons[-1]
+    else:
+      momenta = {lep: mela.SimpleParticle_t(lep)[1] for lep in leptons[1] + leptons[-1]}
+      combinations = [[lep1, lep2, lep3, lep4] for (lep1, lep3), (lep2, lep4) in itertools.product(itertools.combinations(leptons[1], 2), itertools.combinations(leptons[-1], 2))]
+      daughters = min(combinations, key=lambda x: abs(sum((momenta[lep] for lep in x), ROOT.TLorentzVector()).M()-125))
+      associated += [_ for _ in leptons[1]+leptons[-1] if _ not in daughters]
+
+    if not isgen: mothers = None
+    return daughters, associated, mothers
+
+class LHEFile_reco(LHEFileBase):
+  lheeventclass = LHEEvent_reco
   @property
   def finalstateparticles(self):
     return itertools.chain(self.daughters, self.associated)
+
+class LHEFile_gen(LHEFileBase):
+  lheeventclass = LHEEvent_gen
 
 class Event(object):
   def __init__(self, i, gen, reco, xsec, genxsec, genBR):
@@ -163,7 +206,8 @@ class Event(object):
   @property
   def NTrueInt(self): return 0
   @property
-  def PFMET(self): return sum((p for id, p in self.__reco.finalstateparticles if abs(id) in {12, 14, 16}), ROOT.TLorentzVector()).Pt()
+  def PFMET(self): return -sum((p for id, p in self.__reco.finalstateparticles), ROOT.TLorentzVector()).Pt()
+  @methodtools.lru_cache()
   @property
   def nCleanedJets(self): return sum(1 for id, p in self.__reco.finalstateparticles if abs(id) == 0)
   @property
@@ -1441,11 +1485,11 @@ _1jetproductions = {TVar.JQCD}
 _lepVHproductions = {TVar.Lep_WH, TVar.Lep_ZH, TVar.Lep_WH_S, TVar.Lep_ZH_S, TVar.Lep_WH_TU, TVar.Lep_ZH_TU}
 _prodproductions = _2jetproductions | _1jetproductions | _lepVHproductions | {TVar.GammaH, TVar.ttH, TVar.bbH}
 for prob in Event.recoprobabilities():
-  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst, addpaux=prob.addpaux, ispm4l=prob.ispm4l, supermelasyst=prob.supermelasyst, isprod=prob.production in _prodproductions and prob.matrixelement != TVar.MCFM, isproddec=prob.production in _prodproductions and prob.matrixelement == TVar.MCFM, need2associated="J2JEC" in str(prob.cluster), need1associated="J1JEC" in str(prob.cluster), islepVH=prob.cluster in ("LepZH", "LepWH"), subtractp=prob.subtractp):
+  def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, addpconst=prob.addpconst, addpaux=prob.addpaux, ispm4l=prob.ispm4l, supermelasyst=prob.supermelasyst, isprod=prob.production in _prodproductions and prob.matrixelement != TVar.MCFM, isproddec=prob.production in _prodproductions and prob.matrixelement == TVar.MCFM, need2jets="J2JEC" in str(prob.cluster), need1jet="J1JEC" in str(prob.cluster), islepVH=prob.cluster in ("LepZH", "LepWH"), subtractp=prob.subtractp):
     reco = self.reco
     if islepVH: return -999, -999, -999
-    if need2associated and len(reco.associated) < 2: return -999, -999, -999
-    if need1associated and len(reco.associated) != 1: return -999, -999, -999
+    if need2jets and self.nCleanedJets < 2: return -999, -999, -999
+    if need1jet and self.nCleanedJets != 1: return -999, -999, -999
     reco.setProcess(process, me, production)
     for k, v in couplings.items():
       setattr(reco, k, v)
@@ -1505,6 +1549,10 @@ def eventsubclass(cjlstprocess):
   for prob in EventSubClass.genprobabilities():
     def f(self, process=prob.process, production=prob.production, me=prob.matrixelement, couplings=prob.couplings, isprod=prob.production in _prodproductions and prob.matrixelement != TVar.MCFM, isproddec=prob.production in _prodproductions and prob.matrixelement == TVar.MCFM, dividep=prob.dividep):
       gen = self.gen
+      if production == TVar.Had_ZH and abs(gen.associated[0][0]) >= 11:
+        production = TVar.Lep_ZH
+      if production == TVar.Had_WH and abs(gen.associated[0][0]) >= 11:
+        production = TVar.Lep_WH
       gen.setProcess(process, me, production)
       for k, v in couplings.items():
         setattr(gen, k, v)

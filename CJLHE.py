@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
 thisfolder = pathlib2.Path(__file__).parent
 
-from eventclass import CJLSTrow, eventsubclass, fspath, LHEFile_Hwithdecay, LHEFile_Hwithdecay_smear, NumpyImport
+from eventclass import CJLSTrow, eventsubclass, fspath, LHEFile_gen, LHEFile_reco, NumpyImport
 
 np = NumpyImport()
 
@@ -163,8 +163,8 @@ class CJLHEFile(contextlib2.ExitStack):
       NormalBranch("NRecoEle", int),
       NormalBranch("Nvtx", int),
       NormalBranch("NObsInt", int),
-      NormalBranch("NTrueInt", float),
-      NormalBranch("PFMET", float),
+      NormalBranch("NTrueInt", float32),
+      NormalBranch("PFMET", float32),
       NormalBranch("nCleanedJets", int),
       NormalBranch("nCleanedJetsPt30", int),
       NormalBranch("trigWord", int),
@@ -301,8 +301,8 @@ class CJLHEFile(contextlib2.ExitStack):
     for branch in self.__branches:
       branch.attachtotree(self.__t)
 
-    self.__gen = self.enter_context(LHEFile_Hwithdecay(fspath(self.__lhefilename), isgen=True))
-    self.__reco = self.enter_context(LHEFile_Hwithdecay_smear(fspath(self.__lhefilename), isgen=False))
+    self.__gen = self.enter_context(LHEFile_gen(fspath(self.__lhefilename), isgen=True))
+    self.__reco = self.enter_context(LHEFile_reco(fspath(self.__lhefilename), isgen=False))
 
     self.__nentries = 0
     with open(fspath(self.__lhefilename)) as f:
