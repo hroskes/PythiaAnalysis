@@ -295,6 +295,88 @@ class Event(object):
   def phistarZ1(self): return self.decayangles.Phi1
   @property
   def phistarZ2(self): return 0
+  @methodtools.lru_cache()
+  @property
+  def VBFangles(self):
+    if self.nCleanedJets < 2: return None
+    angles = self.__reco.computeVBFAngles()
+    return angles
+  @property
+  def costhetastarVBF(self):
+    angles = self.VBFangles
+    if angles is None: return -999
+    return angles.costhetastar
+  @property
+  def costheta1VBF(self):
+    angles = self.VBFangles
+    if angles is None: return -999
+    return angles.costheta1
+  @property
+  def costheta2VBF(self):
+    angles = self.VBFangles
+    if angles is None: return -999
+    return angles.costheta2
+  @property
+  def PhiVBF(self):
+    angles = self.VBFangles
+    if angles is None: return -999
+    return angles.Phi
+  @property
+  def Phi1VBF(self):
+    angles = self.VBFangles
+    if angles is None: return -999
+    return angles.Phi1
+  @property
+  def Q2V1VBF(self):
+    angles = self.VBFangles
+    if angles is None: return -999
+    return angles.Q2V1
+  @property
+  def Q2V2VBF(self):
+    angles = self.VBFangles
+    if angles is None: return -999
+    return angles.Q2V2
+  @methodtools.lru_cache()
+  @property
+  def VHangles(self):
+    if self.nCleanedJets < 2: return None
+    angles = self.__reco.computeVHAngles(TVar.Had_ZH)
+    return angles
+  @property
+  def costhetastarVH(self):
+    angles = self.VHangles
+    if angles is None: return -999
+    return angles.costhetastar
+  @property
+  def costheta1VH(self):
+    angles = self.VHangles
+    if angles is None: return -999
+    return angles.costheta1
+  @property
+  def costheta2VH(self):
+    angles = self.VHangles
+    if angles is None: return -999
+    return angles.costheta2
+  @property
+  def PhiVH(self):
+    angles = self.VHangles
+    if angles is None: return -999
+    return angles.Phi
+  @property
+  def Phi1VH(self):
+    angles = self.VHangles
+    if angles is None: return -999
+    return angles.Phi1
+  @property
+  def mVstarVH(self):
+    angles = self.VHangles
+    if angles is None: return -999
+    return angles.mVstar
+  @property
+  def mVVH(self):
+    angles = self.VHangles
+    if angles is None: return -999
+    return angles.mV
   @property
   def xi(self): return self.ZZp4.Phi()
   @property
@@ -1137,6 +1219,20 @@ class Event(object):
       "p_JJVBF_SIG_ghv1_1_JHUGen_JECDn_BestDJJ",
       "pConst_JJQCD_SIG_ghg2_1_JHUGen_JECDn_BestDJJ",
       "p_JJQCD_SIG_ghg2_1_JHUGen_JECDn_BestDJJ",
+      "costhetastarVBF",
+      "costheta1VBF",
+      "costheta2VBF",
+      "PhiVBF",
+      "Phi1VBF",
+      "Q2V1VBF",
+      "Q2V2VBF",
+      "costhetastarVH",
+      "costheta1VH",
+      "costheta2VH",
+      "PhiVH",
+      "Phi1VH",
+      "mVstarVH",
+      "mVVH",
     ]
     if cjlstprocess.startswith("ggH"): result += [
       "KFactor_QCD_ggZZ_Nominal",

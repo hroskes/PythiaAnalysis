@@ -78,8 +78,17 @@ class Branch(object):
   @abc.abstractproperty
   def thingforsetbranchaddress(self): pass
 
-  def attachtotree(self, t):
-    t.SetBranchAddress(self.__name, self.thingforsetbranchaddress)
+  @property
+  def typecode(self):
+    return {
+      np.float32: "F",
+    }[self.__type]
+
+  def attachtotree(self, t, isnew=False):
+    if isnew:
+      t.Branch(self.__name, self.thingforsetbranchaddress, self.__name+"/"+self.typecode)
+    else:
+      t.SetBranchAddress(self.__name, self.thingforsetbranchaddress)
     target = type(getattr(t, self.__name))
     if target != self.__type:
       if target == int and self.__type == np.short:
@@ -150,8 +159,9 @@ class CJLHEFile(contextlib2.ExitStack):
     self.lastevent = lastevent
 
     self.__branches = self.branches()
+    self.__addbranches = self.addbranches()
 
-    branchnames = {branch.name for branch in self.__branches}
+    branchnames = {branch.name for branch in self.__branches+self.__addbranches}
     targetbranchnames = set(self.eventclass.branches(cjlstprocess))
     assert branchnames == targetbranchnames, branchnames ^ targetbranchnames
     bad = {name for name in branchnames if not hasattr(self.eventclass, name)}
@@ -290,6 +300,25 @@ class CJLHEFile(contextlib2.ExitStack):
     ]
     return result
 
+  def addbranches(self):
+    float32 = np.float32
+    return [
+      NormalBranch("costhetastarVBF", float32),
+      NormalBranch("costheta1VBF", float32),
+      NormalBranch("costheta2VBF", float32),
+      NormalBranch("PhiVBF", float32),
+      NormalBranch("Phi1VBF", float32),
+      NormalBranch("Q2V1VBF", float32),
+      NormalBranch("Q2V2VBF", float32),
+      NormalBranch("costhetastarVH", float32),
+      NormalBranch("costheta1VH", float32),
+      NormalBranch("costheta2VH", float32),
+      NormalBranch("PhiVH", float32),
+      NormalBranch("Phi1VH", float32),
+      NormalBranch("mVstarVH", float32),
+      NormalBranch("mVVH", float32),
+    ]
+
   @property
   def cjlstfilename(self):
     cjlstprocess = self.cjlstprocess.replace("0MZgfdec05", "0Mf05")
@@ -305,6 +334,8 @@ class CJLHEFile(contextlib2.ExitStack):
       self.__t = t.CloneTree(0, "fast")
     for branch in self.__branches:
       branch.attachtotree(self.__t)
+    for branch in self.__addbranches:
+      branch.attachtotree(self.__t, True)
 
     self.__gen = self.enter_context(LHEFile_gen(fspath(self.__lhefilename), isgen=True))
     self.__reco = self.enter_context(LHEFile_reco(fspath(self.__lhefilename), isgen=False))
@@ -338,7 +369,6 @@ class CJLHEFile(contextlib2.ExitStack):
   @methodtools.lru_cache()
   @property
   def genBR(self): return self.xsecs[2]
-      
 
   def __iter__(self):
     for i, (gen, reco) in enumerate(more_itertools.more.zip_longest(self.__gen, self.__reco), start=1):
@@ -350,7 +380,8 @@ class CJLHEFile(contextlib2.ExitStack):
     with self:
       for i, event in enumerate(self, start=1):
         if len(event.reco.daughters) >= 4:
-          for branch in self.__branches:
+          for branch in self.__branches+self.__addbranches:
+            print branch.name
             branch.setbranchvalue(event)
           self.__t.Fill()
 
