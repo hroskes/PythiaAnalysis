@@ -279,9 +279,9 @@ class Event(object):
   @property
   def decayangles(self):
     angles = self.__reco.computeDecayAngles()
-    np.testing.assert_almost_equal(angles.qH, self.ZZMass, decimal=5)
-    np.testing.assert_almost_equal(angles.m1, self.Z1Mass, decimal=5)
-    np.testing.assert_almost_equal(angles.m2, self.Z2Mass, decimal=5)
+    np.testing.assert_almost_equal(angles.qH, self.ZZMass, decimal=4)
+    np.testing.assert_almost_equal(angles.m1, self.Z1Mass, decimal=4)
+    np.testing.assert_almost_equal(angles.m2, self.Z2Mass, decimal=4)
     return angles
   @property
   def costhetastar(self): return self.decayangles.costhetastar
@@ -391,7 +391,7 @@ class Event(object):
       169*169: 0,
       121*121: 1,
       169*121: 2,
-    }[self.GenZ1Flav*self.GenZ2Flav]
+    }.get(self.GenZ1Flav*self.GenZ2Flav, -1)
   @property
   def genProcessId(self): return 0
   @property
@@ -402,7 +402,7 @@ class Event(object):
   @methodtools.lru_cache()
   @property
   def Gensortedleptons(self):
-    possibleZs = [sorted(pair, key=lambda x: x[0]) for pair in itertools.combinations(self.__gen.daughters, 2) if abs(pair[0][0]) in {11, 13} and sum(p[0] for p in pair) == 0]
+    possibleZs = [sorted(pair, key=lambda x: x[0]) for pair in itertools.combinations(self.__gen.daughters, 2) if sum(p[0] for p in pair) == 0]
     Z1pair = min(possibleZs, key=lambda x: abs(sum((p for id, p in x), ROOT.TLorentzVector()).M()-125))
     l1p, l1m = Z1pair
     Z2pair, = {(l2p, l2m) for l2p, l2m in possibleZs if l2p is not l1p and l2m is not l1m}
