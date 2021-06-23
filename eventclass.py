@@ -1,4 +1,4 @@
-import contextlib, csv, itertools, methodtools, more_itertools, pathlib2, ROOT
+import contextlib, csv, itertools, methodtools, more_itertools, pathlib2, random, ROOT
 from JHUGenMELA.MELA import mela
 from JHUGenMELA.MELA.lhefile import LHEEvent, LHEFileBase, LHEFile_Hwithdecay
 
@@ -140,12 +140,21 @@ class LHEEvent_gen(LHEEvent):
       mela.SimpleParticle_t(-15, 0, 0, 0, 0),
     ]
 
+ptsigmas = {
+  11: 2.399/6,
+  13: 2.169/6,
+  0: 18./6,
+}
+for _ in range(6): ptsigmas[_] = ptsigmas[0]
+for _ in list(ptsigmas.keys()): ptsigmas[-_] = ptsigmas[_]
+del _
+
 class LHEEvent_reco(LHEEvent):
   #smearing is not actually implemented yet
   @classmethod
   def extracteventparticles(cls, lines, isgen):
     assert not isgen
-    daughters, mothers, associated, leptons, taus = [], [], [], {1: [], -1: []}, []
+    daughters, mothers, associated, leptons, taus, jets = [], [], [], {1: [], -1: []}, [], []
     ids = [None]
     mother1s = [None]
     mother2s = [None]
@@ -161,8 +170,8 @@ class LHEEvent_reco(LHEEvent):
       elif status == 1 and (0 <= abs(id) <= 6 or 11 <= abs(id) <= 16 or abs(id) in (21, 22)):
         if abs(id) in (11, 13):
           leptons[id/abs(id)].append(line)
-        elif abs(id) in (1, 2, 3, 4, 5, 6, 22):
-          associated.append(line)
+        elif abs(id) in (1, 2, 3, 4, 5, 21):
+          jets.append(line)
         elif abs(id) in (12, 14, 16):
           pass
         elif abs(id) == 15:
@@ -170,8 +179,13 @@ class LHEEvent_reco(LHEEvent):
         else:
           assert False, id
 
-    for i in leptons:
-      leptons[i] = [mela.SimpleParticle_t(_) for _ in leptons[i]]
+    for lst in list(leptons.values()) + [jets]:
+      lst[:] = [mela.SimpleParticle_t(_) for _ in lst]
+      for id, p in lst:
+        ptsigma = ptsigmas[id]
+        p.SetPtEtaPhiM(random.gauss(p.Pt(), ptsigma), p.Eta(), p.Phi(), p.M())
+
+    associated += jets
 
     if len(leptons[1]) < 2 or len(leptons[-1]) < 2 or len(leptons[1]) == 2 == len(leptons[-1]):
       daughters = leptons[1] + leptons[-1]

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import abc, argparse, contextlib2, csv, methodtools, more_itertools, pathlib2
+import abc, argparse, contextlib2, csv, methodtools, more_itertools, pathlib2, random
 
 if __name__ == "__main__":
   p = argparse.ArgumentParser()
@@ -11,6 +11,7 @@ if __name__ == "__main__":
   p.add_argument("--cjlstfolder", type=pathlib2.Path, default=pathlib2.Path("/work-zfs/lhc/GENtrees/210601_2018MC_photons"))
   p.add_argument("--firstevent", type=int, default=1)
   p.add_argument("--lastevent", type=int, default=float("inf"))
+  p.add_argument("--seed", type=int)
   args = p.parse_args()
   del p
 
@@ -389,7 +390,8 @@ class CJLHEFile(contextlib2.ExitStack):
           for branch in self.__branches:
             assert getattr(self.__t, branch.name) == branch.lastsetbranchvalue, (branch.name, getattr(self.__t, branch.name), branch.lastsetbranchvalue)
 
-def main(**kwargs):
+def main(seed=None, **kwargs):
+  random.seed(seed)
   CJLHEFile(**kwargs).run()
 
 if __name__ == "__main__":
