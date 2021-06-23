@@ -1,4 +1,4 @@
-import contextlib, csv, itertools, methodtools, more_itertools, pathlib2, random, ROOT
+import contextlib, csv, functools, itertools, methodtools, more_itertools, pathlib2, random, ROOT
 from JHUGenMELA.MELA import mela
 from JHUGenMELA.MELA.lhefile import LHEEvent, LHEFileBase, LHEFile_Hwithdecay
 
@@ -127,18 +127,10 @@ class LHEEvent_gen(LHEEvent):
           mother2 = mother2s[mother1]
           mother1 = mother1s[mother1]
 
-    if not daughters: daughters = cls.dummydaughters() #silence TUtil::ConvertVectorFormat warning
+    if not daughters: daughters = dummydaughters() #silence TUtil::ConvertVectorFormat warning
 
     if not isgen: mothers = None
     return daughters, associated, mothers
-
-  @methodtools.lru_cache()
-  @classmethod
-  def dummydaughters(cls):
-    return [
-      mela.SimpleParticle_t(15, 0, 0, 0, 0),
-      mela.SimpleParticle_t(-15, 0, 0, 0, 0),
-    ]
 
 ptsigmas = {
   11: 2.399/6,
@@ -148,6 +140,18 @@ ptsigmas = {
 for _ in range(6): ptsigmas[_] = ptsigmas[0]
 for _ in list(ptsigmas.keys()): ptsigmas[-_] = ptsigmas[_]
 del _
+
+def dummydaughters():
+  global __dummydaughters
+  try:
+    return __dummydaughters
+  except NameError:
+    __dummydaughters = [
+      mela.SimpleParticle_t(15, 0, 0, 0, 0),
+      mela.SimpleParticle_t(-15, 0, 0, 0, 0),
+    ]
+  return dummydaughters()
+
 
 class LHEEvent_reco(LHEEvent):
   #smearing is not actually implemented yet
@@ -201,18 +205,10 @@ class LHEEvent_reco(LHEEvent):
       Z2pair, = {(l2p, l2m) for l2p, l2m in possibleZs if l2p is not l1p and l2m is not l1m}
       daughters = [Z1pair[0], Z1pair[1], Z2pair[0], Z2pair[1]]
 
-    if not daughters: daughters = cls.dummydaughters() #silence TUtil::ConvertVectorFormat warning
+    if not daughters: daughters = dummydaughters() #silence TUtil::ConvertVectorFormat warning
 
     if not isgen: mothers = None
     return daughters, associated, mothers
-
-  @methodtools.lru_cache()
-  @classmethod
-  def dummydaughters(cls):
-    return [
-      mela.SimpleParticle_t(15, 0, 0, 0, 0),
-      mela.SimpleParticle_t(-15, 0, 0, 0, 0),
-    ]
 
 class LHEFile_reco(LHEFileBase):
   lheeventclass = LHEEvent_reco
