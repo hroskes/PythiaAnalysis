@@ -381,7 +381,6 @@ class CJLHEFile(contextlib2.ExitStack):
       for i, event in enumerate(self, start=1):
         if len(event.reco.daughters) >= 4:
           for branch in self.__branches+self.__addbranches:
-            print branch.name
             branch.setbranchvalue(event)
           self.__t.Fill()
 
