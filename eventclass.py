@@ -137,9 +137,23 @@ ptsigmas = {
   13: 2.169/6,
   0: 18./6,
 }
-for _ in range(6): ptsigmas[_] = ptsigmas[0]
-for _ in list(ptsigmas.keys()): ptsigmas[-_] = ptsigmas[_]
-del _
+
+minpts = {
+  11: 7,
+  13: 5,
+  0: 30,
+}
+
+maxetas = {
+  11: 2.5,
+  13: 2.4,
+  0: 4.7,
+}
+
+for dct in ptsigmas, minpts, maxetas:
+  for _ in range(6): dct[_] = dct[0]
+  for _ in list(dct.keys()): dct[-_] = dct[_]
+del dct, _
 
 def dummydaughters():
   global __dummydaughters
@@ -185,9 +199,11 @@ class LHEEvent_reco(LHEEvent):
 
     for lst in list(leptons.values()) + [jets]:
       lst[:] = [mela.SimpleParticle_t(_) for _ in lst]
-      for id, p in lst:
+      for i, (id, p) in reversed(list(enumerate(lst[:]))):
         ptsigma = ptsigmas[id]
         p.SetPtEtaPhiM(random.gauss(p.Pt(), ptsigma), p.Eta(), p.Phi(), p.M())
+        if p.Pt() < minpts[id] or abs(p.Eta()) > maxetas[id]:
+          del lst[i]
 
     associated += jets
 

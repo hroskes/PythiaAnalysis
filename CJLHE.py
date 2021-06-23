@@ -379,16 +379,19 @@ class CJLHEFile(contextlib2.ExitStack):
 
   def run(self):
     with self:
+      filledany = False
       for i, event in enumerate(self, start=1):
         if len(event.reco.daughters) >= 4:
           for branch in self.__branches+self.__addbranches:
             branch.setbranchvalue(event)
           self.__t.Fill()
+          filledany = True
 
         if i%100 == 0 or i == self.__nentries:
           print i, "/", self.__nentries
-          for branch in self.__branches:
-            assert getattr(self.__t, branch.name) == branch.lastsetbranchvalue, (branch.name, getattr(self.__t, branch.name), branch.lastsetbranchvalue)
+          if filledany:
+            for branch in self.__branches:
+              assert getattr(self.__t, branch.name) == branch.lastsetbranchvalue, (branch.name, getattr(self.__t, branch.name), branch.lastsetbranchvalue)
 
 def main(seed=None, **kwargs):
   random.seed(seed)
