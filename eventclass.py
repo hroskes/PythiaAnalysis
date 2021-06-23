@@ -172,7 +172,7 @@ class LHEEvent_reco(LHEEvent):
   @classmethod
   def extracteventparticles(cls, lines, isgen):
     assert not isgen
-    daughters, mothers, associated, leptons, taus, jets = [], [], [], {1: [], -1: []}, [], []
+    daughters, mothers, associated, leptons, taus, jets = [], [], [], {11: [], -11: [], 13: [], -13: []}, [], []
     ids = [None]
     mother1s = [None]
     mother2s = [None]
@@ -187,7 +187,7 @@ class LHEEvent_reco(LHEEvent):
         mothers.append(line)
       elif status == 1 and (0 <= abs(id) <= 6 or 11 <= abs(id) <= 16 or abs(id) in (21, 22)):
         if abs(id) in (11, 13):
-          leptons[id/abs(id)].append(line)
+          leptons[id].append(line)
         elif abs(id) in (1, 2, 3, 4, 5, 21):
           jets.append(line)
         elif abs(id) in (12, 14, 16):
@@ -207,16 +207,21 @@ class LHEEvent_reco(LHEEvent):
 
     associated += jets
 
-    if len(leptons[1]) < 2 or len(leptons[-1]) < 2 or len(leptons[1]) == 2 == len(leptons[-1]):
+    leptons[1] = leptons[11] + leptons[13]
+    leptons[-1] = leptons[-11] + leptons[-13]
+
+    if min(len(leptons[11]), len(leptons[-11])) + min(len(leptons[13]), len(leptons[-13])) < 2:
+      daughters = []
+    elif len(leptons[1]) == 2 == len(leptons[-1]):
       daughters = leptons[1] + leptons[-1]
     else:
-      combinations = [[lep1, lep2, lep3, lep4] for (lep1, lep3), (lep2, lep4) in itertools.product(itertools.combinations(leptons[1], 2), itertools.combinations(leptons[-1], 2))]
+      combinations = [[lep1, lep2, lep3, lep4] for (lep1, lep3), (lep2, lep4) in itertools.product(itertools.combinations(leptons[1], 2), itertools.combinations(leptons[-1], 2)) if lep1.first+lep2.first==0 and lep3.first+lep4.first==0]
       daughters = min(combinations, key=lambda x: abs(sum((lep[1] for lep in x), ROOT.TLorentzVector()).M()-125))
       associated += [_ for _ in leptons[1]+leptons[-1] if _ not in daughters]
 
     if len(daughters) == 4:
       possibleZs = [sorted(pair, key=lambda x: x[0]) for pair in itertools.combinations(daughters, 2) if abs(pair[0][0]) in {11, 13} and sum(p[0] for p in pair) == 0]
-      Z1pair = min(possibleZs, key=lambda x: abs(sum((p for id, p in x), ROOT.TLorentzVector()).M()-91.2))
+      Z1pair = min(possibleZs, key=lambda x: abs(sum((p for id, p in x), ROOT.TLorentzVector()).M()-91.1876))
       l1p, l1m = Z1pair
       Z2pair, = {(l2p, l2m) for l2p, l2m in possibleZs if l2p is not l1p and l2m is not l1m}
       daughters = [Z1pair[0], Z1pair[1], Z2pair[0], Z2pair[1]]
