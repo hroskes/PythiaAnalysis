@@ -328,9 +328,9 @@ class Event(object):
   @property
   def decayangles(self):
     angles = self.__reco.computeDecayAngles()
-    np.testing.assert_almost_equal(angles.qH, self.ZZMass, decimal=4)
-    np.testing.assert_almost_equal(angles.m1, self.Z1Mass, decimal=4)
-    np.testing.assert_almost_equal(angles.m2, self.Z2Mass, decimal=4)
+    np.testing.assert_almost_equal(angles.qH, self.ZZMass, decimal=2)
+    np.testing.assert_almost_equal(angles.m1, self.Z1Mass, decimal=2)
+    np.testing.assert_almost_equal(angles.m2, self.Z2Mass, decimal=2)
     return angles
   @property
   def costhetastar(self): return self.decayangles.costhetastar
