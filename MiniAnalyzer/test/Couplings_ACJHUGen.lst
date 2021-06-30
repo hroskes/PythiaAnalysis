@@ -71,6 +71,14 @@ ZH0PHggfprod05ph0_M125|ghz1=1,0;ghgsgs2=0.655141,0
 HJJ0M_M125|ghg4=1.0062,0;ghz1=1,0
 HJJ0Mf05ph0_M125|ghg2=1,0;ghg4=1.0062,0;ghz1=1,0
 HJJ0PM_M125|ghg2=1,0;ghz1=1,0
+HJJ0PM0MZg_M125|ghg2=1,0;ghzgs4=1,0
+HJJ0PM0MZgfdec05ph0_M125|ghg2=1,0;ghz1=1,0;ghzgs4=0.0529487,0
+HJJ0PM0PHZg_M125|ghg2=1,0;ghzgs2=1,0
+HJJ0PM0PHZgfdec05ph0_M125|ghg2=1,0;ghz1=1,0;ghzgs2=0.0477547,0
+HJJ0PM0Mgg_M125|ghg2=1,0;ghgsgs4=1,0
+HJJ0PM0Mggfdec05ph0_M125|ghg2=1,0;ghz1=1,0;ghgsgs4=0.0536022,0
+HJJ0PM0PHgg_M125|ghg2=1,0;ghgsgs2=1,0
+HJJ0PM0PHggfdec05ph0_M125|ghg2=1,0;ghz1=1,0;ghgsgs2=0.0530640,0
 ttH0M_M125|kappa_tilde=1.6,0;ghz1=1,0
 ttH0Mf05ph0_M125|kappa=1,0;kappa_tilde=1.6,0;ghz1=1,0
 ttH0PM_M125|kappa=1,0;ghz1=1,0
