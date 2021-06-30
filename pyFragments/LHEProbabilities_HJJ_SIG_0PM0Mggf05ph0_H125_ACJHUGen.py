@@ -1,6 +1,6 @@
 ### Spin-0 decay probabilities from JHUGen ###
 LHE_DecayProbabilities_SpinZero_JHUGen = [
-   "Name:SampleDecayHypothesisJHUGen Alias:<Name> Process:SelfDefine_spin0 Production:ZZINDEPENDENT MatrixElement:JHUGen Couplings:ghg2=1,0;ghz1=1,0;ghgsgs2=0.0530640,0 isGen:1 NoBranch:1",
+   "Name:SampleDecayHypothesisJHUGen Alias:<Name> Process:SelfDefine_spin0 Production:ZZINDEPENDENT MatrixElement:JHUGen Couplings:ghg2=1,0;ghz1=1,0;ghgsgs4=0.0536022,0 isGen:1 NoBranch:1",
 
    "Name:Dec_SIG_ghz1_1_JHUGen Process:SelfDefine_spin0 Production:ZZINDEPENDENT MatrixElement:JHUGen Couplings:ghz1=1,0 Options:DivideP=SampleDecayHypothesisJHUGen isGen:1",
    "Name:Dec_SIG_ghz1prime2_1E4_JHUGen Process:SelfDefine_spin0 Production:ZZINDEPENDENT MatrixElement:JHUGen Couplings:ghz1_prime2=10000,0 Options:DivideP=SampleDecayHypothesisJHUGen isGen:1",
@@ -93,7 +93,7 @@ LHE_DecayProbabilities_SpinZero_JHUGen = [
 #   "Name:Dec_SIG_gha2_1_gha4_i_JHUGen Process:SelfDefine_spin0 Production:ZZINDEPENDENT MatrixElement:JHUGen Couplings:ghgsgs2=1,0;ghgsgs4=0,1 Options:DivideP=SampleDecayHypothesisJHUGen isGen:1",
 ]
 LHE_ProdProbabilities_SpinZero_JHUGen = [
-   "Name:SampleProductionHypothesisJHUGen Alias:<Name> Process:SelfDefine_spin0 Production:JJQCD MatrixElement:JHUGen Couplings:ghg2=1,0;ghz1=1,0;ghgsgs2=0.0530640,0 Cluster:BestLOAssociatedVBF isGen:1 NoBranch:1",
+   "Name:SampleProductionHypothesisJHUGen Alias:<Name> Process:SelfDefine_spin0 Production:JJQCD MatrixElement:JHUGen Couplings:ghg2=1,0;ghz1=1,0;ghgsgs4=0.0536022,0 Cluster:BestLOAssociatedVBF isGen:1 NoBranch:1",
 
    "Name:HJJ_SIG_ghg2_1_JHUGen Alias:SampleProductionHypothesisJHUGen Process:SelfDefine_spin0 Production:JJQCD MatrixElement:JHUGen Couplings:ghg2=1,0 Options:DivideP=SampleProductionHypothesisJHUGen Cluster:BestLOAssociatedVBF isGen:1",
    "Name:HJJ_SIG_ghg4_1_JHUGen Process:SelfDefine_spin0 Production:JJQCD MatrixElement:JHUGen Couplings:ghg4=1,0 Options:DivideP=SampleProductionHypothesisJHUGen Cluster:BestLOAssociatedVBF isGen:1",
@@ -109,19 +109,3 @@ theLHEProbabilities = []
 theLHEProbabilities.extend(LHE_DecayProbabilities_SpinZero_JHUGen)
 theLHEProbabilities.extend(LHE_ProdProbabilities_SpinZero_JHUGen)
 
-# Append final list
-for name in (
-             "ZZTree",
-             "CRZLLTree",
-             "ZZTreelooseEle",
-             "CRZLLTreelooseEle",
-             "CRZLLTreeZ1RSE",
-             "ZZTreetle",
-             "CRZLLTreetle",
-            ):
-    if hasattr(process, name):
-        tree = getattr(process, name)
-        #turn on failedTree keeping the most relevant information
-        tree.lheProbabilities.extend(theLHEProbabilities)
-#        if name == "ZZTree" and tree.skipEmptyEvents:
-#            tree.failedTreeLevel = max(tree.failedTreeLevel.value(), LHEFailedTree)

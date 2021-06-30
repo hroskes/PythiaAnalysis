@@ -324,18 +324,25 @@ class CJLHEFile(contextlib2.ExitStack):
   def cjlstfilename(self):
     cjlstprocess = (
       self.cjlstprocess
+        .replace("0MZgf05", "0Mf05")
         .replace("0MZgfdec05", "0Mf05")
         .replace("0MZgfprod05", "0Mf05")
+        .replace("0PHZgf05", "0Mf05")
         .replace("0PHZgfdec05", "0Mf05")
         .replace("0PHZgfprod05", "0Mf05")
+        .replace("0Mggf05", "0Mf05")
         .replace("0Mggfdec05", "0Mf05")
         .replace("0Mggfprod05", "0Mf05")
+        .replace("0PHggf05", "0Mf05")
         .replace("0PHggfdec05", "0Mf05")
         .replace("0PHggfprod05", "0Mf05")
         .replace("0MZg", "0L1Zg")
         .replace("0PHZg", "0L1Zg")
         .replace("0Mgg", "0L1Zg")
         .replace("0PHgg", "0L1Zg")
+        #HJJ
+        .replace("0PM0L1Zg", "0PM")
+        .replace("0PM0Mf05ph0", "0PM")
     )
     return self.cjlstfolder/cjlstprocess/"ZZ4lAnalysis.root"
 
