@@ -1717,7 +1717,10 @@ def eventsubclass(cjlstprocess):
       else:
         prob = gen.computeP()
       if dividep is not None:
-        prob /= getattr(self, "p_Gen_"+dividep)
+        try:
+          prob /= getattr(self, "p_Gen_"+dividep)
+        except ZeroDivisionError:
+          prob = 0
       return prob
 
     f.__name__ = "p_Gen_"+prob.name
