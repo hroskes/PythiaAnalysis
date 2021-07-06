@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import abc, argparse, contextlib2, csv, methodtools, more_itertools, pathlib2, random
+import abc, argparse, contextlib2, csv, methodtools, more_itertools, pathlib2, random, ROOT
 
 if __name__ == "__main__":
   p = argparse.ArgumentParser()
@@ -350,6 +350,7 @@ class CJLHEFile(contextlib2.ExitStack):
     super(CJLHEFile, self).__enter__()
     self.__outfile = self.enter_context(TFile(self.__outfilename, "CREATE", deleteifbad=True))
     ZZTree = self.__outfile.mkdir("ZZTree")
+    self.__counters = ROOT.TH1F("Counters", "Counters", 40, 0, 40)
     with TFile(self.cjlstfilename) as CJLSTfile:
       ZZTree.cd()
       t = CJLSTfile.Get("ZZTree/candTree")
@@ -365,10 +366,11 @@ class CJLHEFile(contextlib2.ExitStack):
     self.__nentries = 0
     with open(fspath(self.__lhefilename)) as f:
       for line in f:
-        if line.strip() == "<event>":
+        if line.strip() == "</event>":
           self.__nentries += 1
     self.__nentries = min(self.__nentries, self.lastevent)
     self.__nentries -= self.firstevent-1
+    self.__counters.SetBinContent(40, self.__nentries)
 
     return self
 
