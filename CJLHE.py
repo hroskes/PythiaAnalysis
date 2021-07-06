@@ -350,9 +350,9 @@ class CJLHEFile(contextlib2.ExitStack):
     super(CJLHEFile, self).__enter__()
     self.__outfile = self.enter_context(TFile(self.__outfilename, "CREATE", deleteifbad=True))
     ZZTree = self.__outfile.mkdir("ZZTree")
-    self.__counters = ROOT.TH1F("Counters", "Counters", 40, 0, 40)
     with TFile(self.cjlstfilename) as CJLSTfile:
       ZZTree.cd()
+      self.__counters = ROOT.TH1F("Counters", "Counters", 40, 0, 40)
       t = CJLSTfile.Get("ZZTree/candTree")
       self.__t = t.CloneTree(0, "fast")
     for branch in self.__branches:
