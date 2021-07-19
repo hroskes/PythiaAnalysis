@@ -1,6 +1,6 @@
 ### Spin-0 decay probabilities from JHUGen ###
 LHE_DecayProbabilities_SpinZero_JHUGen = [
-   "Name:SampleDecayHypothesisJHUGen Alias:<Name> Process:SelfDefine_spin0 Production:ZZINDEPENDENT MatrixElement:JHUGen Couplings:ghg2=1,0;ghgsgs4=1,0 isGen:1 NoBranch:1",
+   "Name:SampleDecayHypothesisJHUGen Alias:<Name> Process:SelfDefine_spin0 Production:ZZINDEPENDENT MatrixElement:JHUGen Couplings:ghg2=1,0;ghgsgs4=0.0536022,0 isGen:1 NoBranch:1",
 
    "Name:Dec_SIG_ghz1_1_JHUGen Process:SelfDefine_spin0 Production:ZZINDEPENDENT MatrixElement:JHUGen Couplings:ghz1=1,0 Options:DivideP=SampleDecayHypothesisJHUGen isGen:1",
    "Name:Dec_SIG_ghz1prime2_1E4_JHUGen Process:SelfDefine_spin0 Production:ZZINDEPENDENT MatrixElement:JHUGen Couplings:ghz1_prime2=10000,0 Options:DivideP=SampleDecayHypothesisJHUGen isGen:1",
