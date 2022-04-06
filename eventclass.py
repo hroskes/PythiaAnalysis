@@ -172,6 +172,7 @@ class LHEEvent_reco(LHEEvent):
   @classmethod
   def extracteventparticles(cls, lines, isgen):
     assert not isgen
+    random.seed(hash(lines[0]))
     daughters, mothers, associated, leptons, taus, jets = [], [], [], {11: [], -11: [], 13: [], -13: []}, [], []
     ids = [None]
     mother1s = [None]
